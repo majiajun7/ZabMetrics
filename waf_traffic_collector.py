@@ -117,13 +117,17 @@ class WAFTrafficCollector:
             if not traffic_data:
                 return 0
             
-            # 查找最新的有效数据（非"-"的数据）
-            for record in traffic_data:
-                value = record.get(metric_name, "-")
-                if value != "-":
-                    return value
+            # 返回最新的数据（第一条记录）
+            # traffic_data已经按时间倒序排列，第一条就是最新的
+            if traffic_data:
+                latest_record = traffic_data[0]
+                value = latest_record.get(metric_name, "-")
+                # 如果值是"-"，返回0
+                if value == "-":
+                    return 0
+                return value
             
-            # 如果所有数据都是"-"，返回0
+            # 如果没有数据，返回0
             return 0
             
         except Exception as e:
