@@ -8,11 +8,6 @@
             <template>Template WAF Traffic Monitor</template>
             <name>Template WAF Traffic Monitor</name>
             <description>明御WAF流量监控模板 - 适用于Zabbix 6.0</description>
-            <groups>
-                <group>
-                    <name>Templates/Applications</name>
-                </group>
-            </groups>
             <discovery_rules>
                 <discovery_rule>
                     <uuid>1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d</uuid>
