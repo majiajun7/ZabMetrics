@@ -465,64 +465,6 @@
                     <description>HTTP请求速率告警阈值(rps)</description>
                 </macro>
             </macros>
-            <dashboards>
-                <dashboard>
-                    <uuid>1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6f</uuid>
-                    <name>WAF流量概览</name>
-                    <pages>
-                        <page>
-                            <widgets>
-                                <widget>
-                                    <type>graph</type>
-                                    <name>站点流量趋势</name>
-                                    <width>12</width>
-                                    <height>5</height>
-                                    <fields>
-                                        <field>
-                                            <type>INTEGER</type>
-                                            <name>source_type</name>
-                                            <value>2</value>
-                                        </field>
-                                    </fields>
-                                </widget>
-                                <widget>
-                                    <type>graph</type>
-                                    <name>站点连接数趋势</name>
-                                    <x>12</x>
-                                    <width>12</width>
-                                    <height>5</height>
-                                    <fields>
-                                        <field>
-                                            <type>INTEGER</type>
-                                            <name>source_type</name>
-                                            <value>2</value>
-                                        </field>
-                                    </fields>
-                                </widget>
-                                <widget>
-                                    <type>problems</type>
-                                    <name>当前告警</name>
-                                    <y>5</y>
-                                    <width>24</width>
-                                    <height>5</height>
-                                    <fields>
-                                        <field>
-                                            <type>INTEGER</type>
-                                            <name>show</name>
-                                            <value>3</value>
-                                        </field>
-                                        <field>
-                                            <type>STRING</type>
-                                            <name>tag_name</name>
-                                            <value>scope</value>
-                                        </field>
-                                    </fields>
-                                </widget>
-                            </widgets>
-                        </page>
-                    </pages>
-                </dashboard>
-            </dashboards>
         </template>
     </templates>
 </zabbix_export>
