@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2024-01-01T00:00:00Z</date>
+    <template_groups>
+        <template_group>
+            <uuid>7df96b18c230490a9a0a9e2307226338</uuid>
+            <name>Templates/Applications</name>
+        </template_group>
+    </template_groups>
+    <templates>
+        <template>
+            <uuid>a8e9c4d5-2f3b-4e6a-8c7d-9b5a1f2e3d4c</uuid>
+            <template>Template WAF Traffic Monitor</template>
+            <name>Template WAF Traffic Monitor</name>
+            <description>明御WAF流量监控模板 - 适用于Zabbix 6.0</description>
+            <groups>
+                <group>
+                    <name>Templates/Applications</name>
+                </group>
+            </groups>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d</uuid>
+                    <name>WAF站点发现</name>
+                    <type>EXTERNAL</type>
+                    <key>waf_site_discovery.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--type", "sites"]</key>
+                    <delay>1h</delay>
+                    <lifetime>7d</lifetime>
+                    <description>自动发现WAF中的所有站点</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>2a3b4c5d-6e7f-8a9b-0c1d-2e3f4a5b6c7d</uuid>
+                            <name>站点 {#SITE_NAME} - 状态</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--check"]</key>
+                            <delay>5m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <description>站点启用状态：1=启用，0=禁用</description>
+                            <valuemap>
+                                <name>Service state</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>site</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d</uuid>
+                            <name>站点 {#SITE_NAME} - 入站流量速率(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <description>入站流量速率平均值</description>
+                            <preprocessing>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <parameters>
+                                        <parameter>1</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>traffic</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>direction</tag>
+                                    <value>inbound</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>4a5b6c7d-8e9f-0a1b-2c3d-4e5f6a7b8c9d</uuid>
+                            <name>站点 {#SITE_NAME} - 入站流量速率(最大)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_max"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <description>入站流量速率最大值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>traffic</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>direction</tag>
+                                    <value>inbound</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0d</uuid>
+                            <name>站点 {#SITE_NAME} - 出站流量速率(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <description>出站流量速率平均值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>traffic</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>direction</tag>
+                                    <value>outbound</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>6a7b8c9d-0e1f-2a3b-4c5d-6e7f8a9b0c1d</uuid>
+                            <name>站点 {#SITE_NAME} - 出站流量速率(最大)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_max"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <description>出站流量速率最大值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>traffic</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>direction</tag>
+                                    <value>outbound</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d</uuid>
+                            <name>站点 {#SITE_NAME} - 当前连接数(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <description>当前连接数平均值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>connection</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d</uuid>
+                            <name>站点 {#SITE_NAME} - 当前连接数(最大)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_max"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <description>当前连接数最大值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>connection</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4d</uuid>
+                            <name>站点 {#SITE_NAME} - 连接速率(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_rate_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>cps</units>
+                            <description>连接速率平均值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>connection</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d</uuid>
+                            <name>站点 {#SITE_NAME} - HTTP请求数(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <description>HTTP请求数平均值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>http</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6e</uuid>
+                            <name>站点 {#SITE_NAME} - HTTP请求数(最大)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_max"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <description>HTTP请求数最大值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>http</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>2a3b4c5d-6e7f-8a9b-0c1d-2e3f4a5b6c7f</uuid>
+                            <name>站点 {#SITE_NAME} - HTTP请求速率(平均)</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"]</key>
+                            <delay>1m</delay>
+                            <history>7d</history>
+                            <trends>30d</trends>
+                            <value_type>FLOAT</value_type>
+                            <units>rps</units>
+                            <description>HTTP请求速率平均值</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>http</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8e</uuid>
+                            <name>站点 {#SITE_NAME} - 所有指标数据</name>
+                            <type>EXTERNAL</type>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--all"]</key>
+                            <delay>5m</delay>
+                            <history>1d</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <description>JSON格式的所有指标数据</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>raw_data</value>
+                                </tag>
+                                <tag>
+                                    <tag>site</tag>
+                                    <value>{#SITE_NAME}</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <uuid>4a5b6c7d-8e9f-0a1b-2c3d-4e5f6a7b8c9e</uuid>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--check"])=0</expression>
+                            <name>站点 {#SITE_NAME} 已禁用</name>
+                            <priority>WARNING</priority>
+                            <description>站点已被禁用</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>availability</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0e</uuid>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"])>{$WAF_TRAFFIC_THRESHOLD_HIGH:1048576}</expression>
+                            <name>站点 {#SITE_NAME} 入站流量过高</name>
+                            <priority>WARNING</priority>
+                            <description>入站流量超过阈值</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>performance</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>6a7b8c9d-0e1f-2a3b-4c5d-6e7f8a9b0c1e</uuid>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"])>{$WAF_CONN_THRESHOLD_HIGH:1000}</expression>
+                            <name>站点 {#SITE_NAME} 连接数过高</name>
+                            <priority>WARNING</priority>
+                            <description>当前连接数超过阈值</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>performance</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2e</uuid>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"])>{$WAF_REQ_RATE_THRESHOLD_HIGH:100}</expression>
+                            <name>站点 {#SITE_NAME} HTTP请求速率过高</name>
+                            <priority>WARNING</priority>
+                            <description>HTTP请求速率超过阈值</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>performance</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3e</uuid>
+                            <name>站点 {#SITE_NAME} - 流量趋势</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>1A7C11</color>
+                                    <item>
+                                        <host>Template WAF Traffic Monitor</host>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>F63100</color>
+                                    <item>
+                                        <host>Template WAF Traffic Monitor</host>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_avg"]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <uuid>9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4e</uuid>
+                            <name>站点 {#SITE_NAME} - 连接数趋势</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>1A7C11</color>
+                                    <item>
+                                        <host>Template WAF Traffic Monitor</host>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>2774A4</color>
+                                    <item>
+                                        <host>Template WAF Traffic Monitor</host>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_max"]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <uuid>0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5e</uuid>
+                            <name>站点 {#SITE_NAME} - HTTP请求趋势</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>1A7C11</color>
+                                    <item>
+                                        <host>Template WAF Traffic Monitor</host>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <tags>
+                <tag>
+                    <tag>class</tag>
+                    <value>application</value>
+                </tag>
+                <tag>
+                    <tag>target</tag>
+                    <value>waf</value>
+                </tag>
+            </tags>
+            <macros>
+                <macro>
+                    <macro>{$WAF_HOST}</macro>
+                    <value>https://10.21.30.5:8443</value>
+                    <description>WAF管理地址</description>
+                </macro>
+                <macro>
+                    <macro>{$WAF_TOKEN}</macro>
+                    <type>SECRET_TEXT</type>
+                    <value>YOUR_TOKEN_HERE</value>
+                    <description>WAF API Token</description>
+                </macro>
+                <macro>
+                    <macro>{$WAF_TRAFFIC_THRESHOLD_HIGH}</macro>
+                    <value>1048576</value>
+                    <description>流量告警阈值(Bps)，默认1MB/s</description>
+                </macro>
+                <macro>
+                    <macro>{$WAF_CONN_THRESHOLD_HIGH}</macro>
+                    <value>1000</value>
+                    <description>连接数告警阈值</description>
+                </macro>
+                <macro>
+                    <macro>{$WAF_REQ_RATE_THRESHOLD_HIGH}</macro>
+                    <value>100</value>
+                    <description>HTTP请求速率告警阈值(rps)</description>
+                </macro>
+            </macros>
+            <dashboards>
+                <dashboard>
+                    <uuid>1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6f</uuid>
+                    <name>WAF流量概览</name>
+                    <pages>
+                        <page>
+                            <widgets>
+                                <widget>
+                                    <type>graph</type>
+                                    <name>站点流量趋势</name>
+                                    <width>12</width>
+                                    <height>5</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>2</value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                                <widget>
+                                    <type>graph</type>
+                                    <name>站点连接数趋势</name>
+                                    <x>12</x>
+                                    <width>12</width>
+                                    <height>5</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>2</value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                                <widget>
+                                    <type>problems</type>
+                                    <name>当前告警</name>
+                                    <y>5</y>
+                                    <width>24</width>
+                                    <height>5</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>show</name>
+                                            <value>3</value>
+                                        </field>
+                                        <field>
+                                            <type>STRING</type>
+                                            <name>tag_name</name>
+                                            <value>scope</value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                            </widgets>
+                        </page>
+                    </pages>
+                </dashboard>
+            </dashboards>
+        </template>
+    </templates>
+</zabbix_export>
