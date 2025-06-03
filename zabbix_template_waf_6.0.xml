@@ -330,7 +330,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0e</uuid>
-                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"])>{$WAF_TRAFFIC_THRESHOLD_HIGH:1048576}</expression>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"])>{$WAF_TRAFFIC_THRESHOLD_HIGH}</expression>
                             <name>站点 {#SITE_NAME} 入站流量过高</name>
                             <priority>WARNING</priority>
                             <description>入站流量超过阈值</description>
@@ -343,7 +343,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>6a7b8c9d-0e1f-2a3b-4c5d-6e7f8a9b0c1e</uuid>
-                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"])>{$WAF_CONN_THRESHOLD_HIGH:1000}</expression>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"])>{$WAF_CONN_THRESHOLD_HIGH}</expression>
                             <name>站点 {#SITE_NAME} 连接数过高</name>
                             <priority>WARNING</priority>
                             <description>当前连接数超过阈值</description>
@@ -356,7 +356,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2e</uuid>
-                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"])>{$WAF_REQ_RATE_THRESHOLD_HIGH:100}</expression>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"])>{$WAF_REQ_RATE_THRESHOLD_HIGH}</expression>
                             <name>站点 {#SITE_NAME} HTTP请求速率过高</name>
                             <priority>WARNING</priority>
                             <description>HTTP请求速率超过阈值</description>
