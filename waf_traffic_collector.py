@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+y#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 明御WAF流量数据采集脚本
@@ -77,11 +77,40 @@ class WAFTrafficCollector:
                 if debug:
                     print("无法获取设备ID，使用默认值: default")
         
+        # 根据网页版的参数，device_id应该是站点的struct_pk
+        # 如果传入的device_id是"0"（全局），则尝试获取实际的设备ID
+        actual_device_id = device_id
+        if device_id == "0" or device_id == "":
+            # 尝试从站点信息中获取实际的设备ID
+            site_url = f"{self.host}/api/v1/website/site/"
+            site_params = {"page": 1, "per_page": 1000}
+            try:
+                site_response = requests.get(
+                    site_url,
+                    headers=self.headers,
+                    params=site_params,
+                    verify=False,
+                    timeout=10
+                )
+                if site_response.status_code == 200:
+                    site_data = site_response.json()
+                    if site_data.get("code") == "SUCCESS":
+                        sites = site_data.get("data", {}).get("result", [])
+                        for site in sites:
+                            if site.get("_pk") == app_id:
+                                # 找到对应的站点，使用其struct_pk作为device_id
+                                actual_device_id = site.get("struct_pk", device_id)
+                                if debug:
+                                    print(f"从站点信息获取的实际设备ID: {actual_device_id}")
+                                break
+            except Exception:
+                pass
+        
         url = f"{self.host}/api/v1/logs/traffic/"
         params = {
             "type": "mins",
             "app_id": app_id,
-            "device_id": device_id,
+            "device_id": actual_device_id,
             "_ts": int(time.time() * 1000)
         }
         
