@@ -25,7 +25,7 @@ def test_single_item(server, host, key, value):
         '-vv'
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     print(f"\n输出:\n{result.stdout}")
     if result.stderr:
         print(f"错误:\n{result.stderr}")

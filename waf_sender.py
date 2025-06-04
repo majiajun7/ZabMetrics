@@ -256,8 +256,24 @@ class WAFCollector:
             # 创建临时文件，使用zabbix_sender的文本格式
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
                 for item in data:
+                    # 对包含空格或特殊字符的key和value进行引号包装
+                    host = item["host"]
+                    key = item["key"]
+                    clock = item.get("clock", "")
+                    value = item["value"]
+                    
+                    # 如果key包含空格或特殊字符，需要用引号包装
+                    if ' ' in key or '[' in key:
+                        key = f'"{key}"'
+                    
+                    # 如果value是字符串且包含空格或特殊字符，需要用引号包装
+                    if isinstance(value, str) and (' ' in value or '"' in value or '\n' in value):
+                        # 转义内部的引号
+                        value = value.replace('\\', '\\\\').replace('"', '\\"')
+                        value = f'"{value}"'
+                    
                     # 格式: hostname key timestamp value
-                    line = f'{item["host"]} {item["key"]} {item.get("clock", "")} {item["value"]}\n'
+                    line = f'{host} {key} {clock} {value}\n'
                     f.write(line)
                 temp_file = f.name
                 
