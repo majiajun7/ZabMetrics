@@ -36,6 +36,6 @@ def fix_uuids_in_xml(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    file_path = "/Users/jayson/Downloads/ZabMetrics/zabbix_template_waf_6.0.xml"
+    file_path = "/Users/jayson/Downloads/ZabMetrics/zabbix_template_waf_sender_6.0.xml"
     print(f"正在修复文件: {file_path}")
     fix_uuids_in_xml(file_path)
