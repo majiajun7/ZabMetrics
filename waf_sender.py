@@ -111,6 +111,28 @@ class WAFCollector:
             logger.error(f"获取设备ID失败: {e}")
             
         return None
+    
+    def get_device_serial(self):
+        """
+        获取设备序列号作为备用device_id
+        使用 /api/v1/device/info/ 接口（参考waf_traffic_collector.py）
+        """
+        try:
+            response = self.session.get(
+                f"{self.waf_host}/api/v1/device/info/",
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "SUCCESS":
+                    # 使用设备序列号作为device_id
+                    return data.get("data", {}).get("serial", "")
+            
+            return None
+            
+        except Exception:
+            return None
         
     def get_sites(self):
         """获取所有站点信息"""
@@ -152,12 +174,15 @@ class WAFCollector:
         return []
         
     def find_working_device_id(self, app_id, original_device_id):
-        """智能查找可用的device_id"""
-        # 如果original_device_id是"0"，尝试获取真实的device_id
-        if original_device_id == "0" or not original_device_id:
+        """
+        智能查找可用的device_id
+        整合了waf_traffic_collector.py的最佳实践
+        """
+        # 处理"0"、"auto"或空值的情况
+        if not original_device_id or original_device_id in ["0", "auto"]:
             real_device_id = self.get_device_id()
             if real_device_id:
-                logger.debug(f"站点 {app_id} 的struct_pk是'0'，使用真实设备ID: {real_device_id}")
+                logger.debug(f"站点 {app_id} 的device_id是'{original_device_id}'，使用真实设备ID: {real_device_id}")
                 return real_device_id
         
         # 尝试使用流量API获取数据的辅助函数
@@ -197,11 +222,11 @@ class WAFCollector:
         if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
             return device_id
         
-        # 如果原始device_id失败，尝试从站点信息查找
+        # 如果原始device_id失败，尝试多种方法
         if not result or not any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
             logger.debug(f"原始device_id {original_device_id} 未返回有效数据，尝试其他方法...")
             
-            # 从站点列表查找struct_pk
+            # 方法1：从站点列表查找struct_pk
             try:
                 for site in self.cached_sites:
                     if site.get('id') == app_id:
@@ -214,10 +239,39 @@ class WAFCollector:
             except Exception:
                 pass
             
-            # 尝试从设备名称接口获取
+            # 方法2：尝试从设备名称接口获取UUID格式的device_id
             real_device_id = self.get_device_id()
             if real_device_id and real_device_id != original_device_id:
                 device_id, result = try_get_data(real_device_id)
+                if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+                    return device_id
+            
+            # 方法3：如果还是没有找到，尝试从集群拓扑查找（参考waf_traffic_collector.py）
+            try:
+                for site_type in ['reverse', 'transparent', 'traction', 'sniffer', 'bridge']:
+                    tree_url = f"{self.waf_host}/api/v1/website/tree/{site_type}/"
+                    tree_response = self.session.get(tree_url, timeout=10)
+                    if tree_response.status_code == 200:
+                        tree_data = tree_response.json()
+                        if tree_data.get("code") == "SUCCESS":
+                            tree_items = tree_data.get("data", [])
+                            for item in tree_items:
+                                for area in item.get("children", []):
+                                    for cluster in area.get("children", []):
+                                        cluster_id = cluster.get("_pk")
+                                        if cluster_id and cluster_id not in ["0", "1", original_device_id]:
+                                            device_id, result = try_get_data(cluster_id)
+                                            if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+                                                logger.debug(f"成功使用集群ID: {cluster_id}")
+                                                return device_id
+            except Exception as e:
+                logger.debug(f"集群拓扑查找失败: {e}")
+            
+            # 方法4：最后尝试使用设备序列号作为备用（参考waf_traffic_collector.py）
+            device_serial = self.get_device_serial()
+            if device_serial and device_serial != original_device_id:
+                logger.debug(f"尝试使用设备序列号: {device_serial}")
+                device_id, result = try_get_data(device_serial)
                 if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
                     return device_id
             
