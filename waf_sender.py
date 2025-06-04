@@ -49,31 +49,29 @@ class WAFCollector:
         self.session.verify = False
         self.session.headers.update({
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}'
         })
         
     def login(self):
-        """登录WAF获取session"""
+        """验证连接（使用Bearer token已经在header中）"""
+        # 由于我们使用Bearer token认证，不需要单独的登录步骤
+        # 直接测试一个API来验证连接
         try:
-            login_data = {"authToken": self.token}
-            response = self.session.post(
-                f"{self.waf_host}/api/open/auth",
-                json=login_data,
+            response = self.session.get(
+                f"{self.waf_host}/api/v1/device/name/",
                 timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 0:
-                    logger.info("WAF登录成功")
-                    return True
-                else:
-                    logger.error(f"WAF登录失败: {result.get('message', '未知错误')}")
+                logger.info("WAF连接验证成功")
+                return True
             else:
-                logger.error(f"WAF登录请求失败: HTTP {response.status_code}")
+                logger.error(f"WAF连接验证失败: HTTP {response.status_code}")
+                logger.debug(f"响应内容: {response.text}")
                 
         except Exception as e:
-            logger.error(f"WAF登录异常: {e}")
+            logger.error(f"WAF连接异常: {e}")
             
         return False
         
@@ -82,37 +80,20 @@ class WAFCollector:
         try:
             # 先尝试从设备列表获取
             response = self.session.get(
-                f"{self.waf_host}/api/open/device/list",
+                f"{self.waf_host}/api/v1/device/name/",
+                params={"_ts": int(time.time() * 1000)},
                 timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 0 and result.get('data'):
-                    devices = result['data']
-                    if devices:
-                        # 获取第一个设备的ID
-                        device_id = devices[0].get('clusterNodeId')
-                        if device_id:
-                            logger.debug(f"从设备列表获取到设备ID: {device_id}")
+                data = response.json()
+                if data and 'result' in data:
+                    # 遍历结果获取设备ID
+                    for item in data.get('result', []):
+                        if item.get('value'):
+                            device_id = item['value']
+                            logger.debug(f"获取到设备ID: {device_id}")
                             return device_id
-                            
-            # 尝试从集群拓扑获取
-            response = self.session.get(
-                f"{self.waf_host}/api/open/cluster/topology",
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 0 and result.get('data'):
-                    # 查找本机或主设备
-                    for node in result['data']:
-                        if node.get('isLocal') or node.get('isMaster'):
-                            device_id = node.get('nodeId')
-                            if device_id:
-                                logger.debug(f"从集群拓扑获取到设备ID: {device_id}")
-                                return device_id
                                 
         except Exception as e:
             logger.error(f"获取设备ID失败: {e}")
@@ -123,23 +104,28 @@ class WAFCollector:
         """获取所有站点信息"""
         try:
             response = self.session.get(
-                f"{self.waf_host}/api/open/application/list",
+                f"{self.waf_host}/api/v1/app/list",
+                params={"_ts": int(time.time() * 1000)},
                 timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 0:
-                    sites = []
-                    for app in result.get('data', []):
-                        site = {
-                            'id': app.get('id'),
-                            'name': app.get('name'),
-                            'enabled': app.get('enabled', False),
-                            'struct_id': app.get('structId')
-                        }
-                        sites.append(site)
-                    return sites
+                data = response.json()
+                sites = []
+                
+                # 处理响应数据
+                items = data.get('data', {}).get('rows', [])
+                for app in items:
+                    site = {
+                        'id': app.get('id'),
+                        'name': app.get('name'),
+                        'enabled': app.get('status') == 1,  # 状态1表示启用
+                        'struct_id': app.get('struct_id', app.get('id'))  # 使用struct_id或id
+                    }
+                    sites.append(site)
+                
+                logger.info(f"发现 {len(sites)} 个站点")
+                return sites
                     
         except Exception as e:
             logger.error(f"获取站点列表失败: {e}")
@@ -153,23 +139,40 @@ class WAFCollector:
             start_time = now - 300  # 5分钟前
             
             params = {
-                'clusterNodeId': device_id,
-                'appId': app_id,
-                'startTime': start_time,
-                'endTime': now,
-                'statistic': 'avg,max'
+                '_ts': int(time.time() * 1000),
+                'app_id': app_id,
+                'struct_id': device_id,
+                'stat_type': 'avg',
+                'before': 5,  # 5分钟前的数据
+                'interval': 300  # 5分钟间隔
             }
             
             response = self.session.get(
-                f"{self.waf_host}/api/open/traffic/app",
+                f"{self.waf_host}/api/v1/stat/app_realtime/",
                 params=params,
                 timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 0:
-                    return result.get('data', {})
+                data = response.json()
+                # 解析流量数据
+                if data and 'result' in data:
+                    results = data['result']
+                    if results and len(results) > 0:
+                        # 获取最新的数据点
+                        latest = results[-1] if isinstance(results, list) else results
+                        return {
+                            'bytesInRateAvg': latest.get('bytes_in_rate', 0),
+                            'bytesInRateMax': latest.get('bytes_in_rate', 0),
+                            'bytesOutRateAvg': latest.get('bytes_out_rate', 0),
+                            'bytesOutRateMax': latest.get('bytes_out_rate', 0),
+                            'connCurAvg': latest.get('conn_cur', 0),
+                            'connCurMax': latest.get('conn_cur', 0),
+                            'connRateAvg': latest.get('conn_rate', 0),
+                            'httpReqCntAvg': latest.get('http_req_cnt', 0),
+                            'httpReqCntMax': latest.get('http_req_cnt', 0),
+                            'httpReqRateAvg': latest.get('http_req_rate', 0)
+                        }
                     
         except Exception as e:
             logger.error(f"获取流量数据失败 (app_id={app_id}): {e}")
