@@ -148,10 +148,10 @@ class WAFSiteDiscovery:
             if debug:
                 print(f"[DEBUG] 获取device_id失败: {e}")
         
-        # 如果无法获取，返回默认值
+        # 如果无法获取，返回None
         if debug:
-            print(f"[DEBUG] 使用默认device_id: a72852d5-2a84-599f-8c69-790302ff8364")
-        return "a72852d5-2a84-599f-8c69-790302ff8364"
+            print(f"[DEBUG] 无法获取device_id，返回None")
+        return None
     
     def discover_sites(self, debug=False):
         """
@@ -251,6 +251,16 @@ class WAFSiteDiscovery:
                         
                         # 使用之前找到的device_id
                         effective_device_id = site_device_mapping.get(site_id, struct_pk)
+                        
+                        # 如果device_id无效（None或"0"），跳过或警告
+                        if not effective_device_id or effective_device_id == "0":
+                            if debug:
+                                print(f"[DEBUG] 警告：站点 {site.get('name')} 没有有效的device_id，使用struct_pk: {struct_pk}")
+                            # 如果struct_pk也是"0"，可能需要特殊处理
+                            if struct_pk == "0":
+                                if debug:
+                                    print(f"[DEBUG] 错误：站点 {site.get('name')} 无法获取有效的device_id，跳过")
+                                continue  # 跳过这个站点
                         
                         # 获取站点基本信息
                         site_info = {
