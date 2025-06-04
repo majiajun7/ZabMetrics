@@ -83,7 +83,7 @@
                             <history>7d</history>
                             <trends>30d</trends>
                             <value_type>FLOAT</value_type>
-                            <units>Bps</units>
+                            <units>bps</units>
                             <description>入站流量速率平均值</description>
                             <tags>
                                 <tag>
@@ -109,7 +109,7 @@
                             <history>7d</history>
                             <trends>30d</trends>
                             <value_type>FLOAT</value_type>
-                            <units>Bps</units>
+                            <units>bps</units>
                             <description>入站流量速率最大值</description>
                             <tags>
                                 <tag>
@@ -135,7 +135,7 @@
                             <history>7d</history>
                             <trends>30d</trends>
                             <value_type>FLOAT</value_type>
-                            <units>Bps</units>
+                            <units>bps</units>
                             <description>出站流量速率平均值</description>
                             <tags>
                                 <tag>
@@ -161,7 +161,7 @@
                             <history>7d</history>
                             <trends>30d</trends>
                             <value_type>FLOAT</value_type>
-                            <units>Bps</units>
+                            <units>bps</units>
                             <description>出站流量速率最大值</description>
                             <tags>
                                 <tag>
