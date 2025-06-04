@@ -54,6 +54,7 @@ class WAFCollector:
             'Authorization': f'Bearer {token}'
         })
         self.cached_sites = []  # 缓存站点信息
+        self.cached_device_id = None  # 缓存设备ID
         
     def login(self):
         """验证连接（使用Bearer token已经在header中）"""
@@ -82,6 +83,10 @@ class WAFCollector:
         获取设备ID
         使用 /api/v1/device/name/ 接口获取正确的UUID格式device_id
         """
+        # 如果已经缓存了设备ID，直接返回
+        if self.cached_device_id:
+            return self.cached_device_id
+            
         try:
             # 从 /api/v1/device/name/ 接口获取设备ID
             response = self.session.get(
@@ -99,6 +104,7 @@ class WAFCollector:
                     device_id = device_info.get('id')
                     if device_id:
                         logger.debug(f"获取到设备ID: {device_id}")
+                        self.cached_device_id = device_id  # 缓存设备ID
                         return device_id
                                 
         except Exception as e:
