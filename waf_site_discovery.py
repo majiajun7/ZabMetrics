@@ -85,12 +85,13 @@ class WAFSiteDiscovery:
         
         return mapping
     
-    def find_device_id_for_site(self, app_id):
+    def find_device_id_for_site(self, app_id, debug=False):
         """
         为特定站点查找正确的device_id
         使用 /api/v1/device/name/ 接口获取设备ID
         
         :param app_id: 站点ID
+        :param debug: 是否启用调试输出
         :return: device_id (UUID格式) 或 None
         """
         try:
@@ -111,39 +112,52 @@ class WAFSiteDiscovery:
                 if data.get("code") == "SUCCESS":
                     device_id = data.get("data", {}).get("id")
                     if device_id:
+                        if debug:
+                            print(f"[DEBUG] 从/api/v1/device/name/接口获取到device_id: {device_id}")
                         # 可选：验证这个device_id是否能获取到流量数据
-                        traffic_url = f"{self.host}/api/v1/logs/traffic/"
-                        test_params = {
-                            "type": "mins",
-                            "app_id": app_id,
-                            "device_id": device_id,
-                            "_ts": int(time.time() * 1000)
-                        }
-                        try:
-                            test_response = requests.get(
-                                traffic_url,
-                                headers=self.headers,
-                                params=test_params,
-                                verify=False,
-                                timeout=5
-                            )
-                            if test_response.status_code == 200:
-                                test_data = test_response.json()
-                                if test_data.get("code") == "SUCCESS":
-                                    return device_id
-                        except:
-                            # 即使验证失败，也返回获取到的device_id
+                        if app_id:  # 只有提供了app_id才验证
+                            traffic_url = f"{self.host}/api/v1/logs/traffic/"
+                            test_params = {
+                                "type": "mins",
+                                "app_id": app_id,
+                                "device_id": device_id,
+                                "_ts": int(time.time() * 1000)
+                            }
+                            try:
+                                test_response = requests.get(
+                                    traffic_url,
+                                    headers=self.headers,
+                                    params=test_params,
+                                    verify=False,
+                                    timeout=5
+                                )
+                                if test_response.status_code == 200:
+                                    test_data = test_response.json()
+                                    if test_data.get("code") == "SUCCESS":
+                                        if debug:
+                                            print(f"[DEBUG] device_id验证成功，可以获取流量数据")
+                                        return device_id
+                            except:
+                                # 即使验证失败，也返回获取到的device_id
+                                if debug:
+                                    print(f"[DEBUG] device_id验证失败，但仍使用该ID")
+                                return device_id
+                        else:
                             return device_id
-        except:
-            pass
+        except Exception as e:
+            if debug:
+                print(f"[DEBUG] 获取device_id失败: {e}")
         
         # 如果无法获取，返回默认值
+        if debug:
+            print(f"[DEBUG] 使用默认device_id: a72852d5-2a84-599f-8c69-790302ff8364")
         return "a72852d5-2a84-599f-8c69-790302ff8364"
     
-    def discover_sites(self):
+    def discover_sites(self, debug=False):
         """
         发现所有站点
         
+        :param debug: 是否启用调试输出
         :return: Zabbix LLD格式的JSON数据
         """
         try:
@@ -171,17 +185,24 @@ class WAFSiteDiscovery:
                     sites = data.get("data", {}).get("result", [])
                     
                     # 先为每个站点查找正确的device_id
-                    print(f"发现 {len(sites)} 个站点，开始查找device_id...")
+                    if debug:
+                        print(f"[DEBUG] 发现 {len(sites)} 个站点")
+                    
                     for site in sites:
                         site_id = site.get("_pk", "")
+                        site_name = site.get("name", "")
                         struct_pk = site.get("struct_pk", "")
+                        
+                        if debug:
+                            print(f"[DEBUG] 处理站点: {site_name} (ID: {site_id}, struct_pk: {struct_pk})")
                         
                         # 如果struct_pk是"0"（全局配置），需要查找实际的device_id
                         if struct_pk == "0":
-                            actual_device_id = self.find_device_id_for_site(site_id)
+                            actual_device_id = self.find_device_id_for_site(site_id, debug)
                             if actual_device_id:
                                 site_device_mapping[site_id] = actual_device_id
-                                print(f"站点 {site.get('name')} ({site_id}) -> device_id: {actual_device_id}")
+                                if debug:
+                                    print(f"[DEBUG] 站点 {site_name} 使用device_id: {actual_device_id}")
                             else:
                                 # 如果找不到，尝试通过实际请求流量API来探测
                                 test_url = f"{self.host}/api/v1/logs/traffic/"
@@ -209,13 +230,14 @@ class WAFSiteDiscovery:
                                                     result = test_data.get("data", {}).get("result", [])
                                                     if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
                                                         site_device_mapping[site_id] = test_id
-                                                        print(f"通过测试找到站点 {site.get('name')} 的device_id: {test_id}")
                                                         break
                                         except:
                                             pass
                         else:
                             # struct_pk不是"0"，直接使用
                             site_device_mapping[site_id] = struct_pk
+                            if debug:
+                                print(f"[DEBUG] 站点 {site_name} 使用struct_pk作为device_id: {struct_pk}")
                     
                     # 构建Zabbix LLD格式的数据
                     discovery_data = {
@@ -240,7 +262,8 @@ class WAFSiteDiscovery:
                             "{#SITE_DOMAIN}": ",".join(site.get("domain", [])),
                             "{#SITE_ENABLE}": "1" if site.get("enable", False) else "0",
                             "{#STRUCT_ID}": effective_device_id,  # 使用找到的device_id
-                            "{#DEVICE_ID}": effective_device_id   # 备用
+                            "{#DEVICE_ID}": effective_device_id,  # 备用
+                            "{#STRUCT_PK}": struct_pk  # 原始的struct_pk值，用于调试
                         }
                         
                         discovery_data["data"].append(site_info)
@@ -307,6 +330,7 @@ def main():
     parser.add_argument('--token', required=True, help='API Token')
     parser.add_argument('--type', choices=['sites', 'devices'], default='sites', 
                        help='发现类型：sites(站点) 或 devices(设备)')
+    parser.add_argument('--debug', action='store_true', help='启用调试输出')
     
     args = parser.parse_args()
     
@@ -315,7 +339,7 @@ def main():
     
     # 执行发现
     if args.type == 'sites':
-        print(discovery.discover_sites())
+        print(discovery.discover_sites(debug=args.debug))
     else:
         print(discovery.discover_devices())
 
