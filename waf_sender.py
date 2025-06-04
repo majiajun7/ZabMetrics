@@ -313,18 +313,18 @@ class WAFCollector:
                                     break
                             
                             if valid_data:
-                                # 处理数据，将"-"转换为0
+                                # 处理数据，将"-"转换为0，使用正确的字段名
                                 return {
-                                    'bytesInRateAvg': float(record.get('bytes_in_rate', 0)) if record.get('bytes_in_rate') != '-' else 0,
-                                    'bytesInRateMax': float(record.get('bytes_in_rate', 0)) if record.get('bytes_in_rate') != '-' else 0,
-                                    'bytesOutRateAvg': float(record.get('bytes_out_rate', 0)) if record.get('bytes_out_rate') != '-' else 0,
-                                    'bytesOutRateMax': float(record.get('bytes_out_rate', 0)) if record.get('bytes_out_rate') != '-' else 0,
-                                    'connCurAvg': float(record.get('conn_cur', 0)) if record.get('conn_cur') != '-' else 0,
-                                    'connCurMax': float(record.get('conn_cur', 0)) if record.get('conn_cur') != '-' else 0,
-                                    'connRateAvg': float(record.get('conn_rate', 0)) if record.get('conn_rate') != '-' else 0,
-                                    'httpReqCntAvg': float(record.get('http_req_cnt', 0)) if record.get('http_req_cnt') != '-' else 0,
-                                    'httpReqCntMax': float(record.get('http_req_cnt', 0)) if record.get('http_req_cnt') != '-' else 0,
-                                    'httpReqRateAvg': float(record.get('http_req_rate', 0)) if record.get('http_req_rate') != '-' else 0
+                                    'bytesInRateAvg': float(record.get('bytes_in_rate_avg', 0)) if record.get('bytes_in_rate_avg') != '-' else 0,
+                                    'bytesInRateMax': float(record.get('bytes_in_rate_max', 0)) if record.get('bytes_in_rate_max') != '-' else 0,
+                                    'bytesOutRateAvg': float(record.get('bytes_out_rate_avg', 0)) if record.get('bytes_out_rate_avg') != '-' else 0,
+                                    'bytesOutRateMax': float(record.get('bytes_out_rate_max', 0)) if record.get('bytes_out_rate_max') != '-' else 0,
+                                    'connCurAvg': float(record.get('conn_cur_avg', 0)) if record.get('conn_cur_avg') != '-' else 0,
+                                    'connCurMax': float(record.get('conn_cur_max', 0)) if record.get('conn_cur_max') != '-' else 0,
+                                    'connRateAvg': float(record.get('conn_rate_avg', 0)) if record.get('conn_rate_avg') != '-' else 0,
+                                    'httpReqCntAvg': float(record.get('http_req_cnt_avg', 0)) if record.get('http_req_cnt_avg') != '-' else 0,
+                                    'httpReqCntMax': float(record.get('http_req_cnt_max', 0)) if record.get('http_req_cnt_max') != '-' else 0,
+                                    'httpReqRateAvg': float(record.get('http_req_rate_avg', 0)) if record.get('http_req_rate_avg') != '-' else 0
                                 }
                 else:
                     logger.debug(f"流量API返回错误: {data}")
