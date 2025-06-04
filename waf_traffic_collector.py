@@ -346,74 +346,61 @@ class WAFTrafficCollector:
     def _find_actual_device_id(self, app_id, debug=False):
         """
         查找站点实际使用的device_id
+        使用 /api/v1/device/name/ 接口获取正确的device_id
         
         :param app_id: 站点ID
         :param debug: 是否启用调试模式
         :return: 实际的device_id或None
         """
         try:
-            # 先从设备信息获取
-            device_serial = self.get_device_id()
-            if device_serial:
-                if debug:
-                    print(f"尝试设备序列号作为device_id: {device_serial}")
-                # 快速测试这个device_id是否有效
-                url = f"{self.host}/api/v1/logs/traffic/"
-                params = {
-                    "type": "mins",
-                    "app_id": app_id,
-                    "device_id": device_serial,
-                    "_ts": int(time.time() * 1000)
-                }
-                response = requests.get(
-                    url,
-                    headers=self.headers,
-                    params=params,
-                    verify=False,
-                    timeout=10
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get("code") == "SUCCESS":
-                        result = data.get("data", {}).get("result", [])
-                        if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
-                            return device_serial
+            # 从 /api/v1/device/name/ 接口获取设备ID
+            device_name_url = f"{self.host}/api/v1/device/name/"
+            params = {"_ts": int(time.time() * 1000)}
             
-            # 从集群拓扑查找
-            for site_type in ['transparent', 'reverse', 'traction', 'sniffer', 'bridge']:
-                tree_url = f"{self.host}/api/v1/website/tree/{site_type}/"
-                tree_response = requests.get(
-                    tree_url,
-                    headers=self.headers,
-                    verify=False,
-                    timeout=10
-                )
-                if tree_response.status_code == 200:
-                    tree_data = tree_response.json()
-                    if tree_data.get("code") == "SUCCESS":
-                        tree_items = tree_data.get("data", [])
-                        # 递归查找包含该站点的集群
-                        def find_cluster_for_site(nodes, parent_cluster=None):
-                            for node in nodes:
-                                if node.get("struct_type") == "cluster":
-                                    parent_cluster = node.get("_pk")
-                                elif node.get("struct_type") == "site" and node.get("_pk") == app_id:
-                                    return parent_cluster
-                                # 递归查找子节点
-                                children = node.get("children", [])
-                                if children:
-                                    result = find_cluster_for_site(children, parent_cluster)
-                                    if result:
-                                        return result
-                            return None
-                        
-                        cluster_id = find_cluster_for_site(tree_items)
-                        if cluster_id and cluster_id not in ["0", "1"]:
-                            if debug:
-                                print(f"找到站点所属的集群ID: {cluster_id}")
-                            return cluster_id
+            response = requests.get(
+                device_name_url,
+                headers=self.headers,
+                params=params,
+                verify=False,
+                timeout=10
+            )
             
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "SUCCESS":
+                    device_id = data.get("data", {}).get("id")
+                    if device_id:
+                        if debug:
+                            print(f"从device/name接口获取到device_id: {device_id}")
+                        # 验证这个device_id是否能获取到流量数据
+                        url = f"{self.host}/api/v1/logs/traffic/"
+                        test_params = {
+                            "type": "mins",
+                            "app_id": app_id,
+                            "device_id": device_id,
+                            "_ts": int(time.time() * 1000)
+                        }
+                        test_response = requests.get(
+                            url,
+                            headers=self.headers,
+                            params=test_params,
+                            verify=False,
+                            timeout=10
+                        )
+                        if test_response.status_code == 200:
+                            test_data = test_response.json()
+                            if test_data.get("code") == "SUCCESS":
+                                result = test_data.get("data", {}).get("result", [])
+                                if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+                                    return device_id
+                                elif debug:
+                                    print(f"device_id {device_id} 返回的数据都是空的")
+            
+            # 如果上述方法失败，返回None
+            if debug:
+                print("无法从device/name接口获取有效的device_id")
             return None
+            
         except Exception as e:
             if debug:
                 print(f"查找device_id时出错: {e}")
