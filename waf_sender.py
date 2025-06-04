@@ -88,13 +88,13 @@ class WAFCollector:
             if response.status_code == 200:
                 data = response.json()
                 logger.debug(f"设备响应数据: {data}")
-                if data and 'result' in data:
-                    # 遍历结果获取设备ID
-                    for item in data.get('result', []):
-                        if item.get('value'):
-                            device_id = item['value']
-                            logger.debug(f"获取到设备ID: {device_id}")
-                            return device_id
+                if data and data.get('code') == 'SUCCESS':
+                    # 获取设备ID
+                    device_info = data.get('data', {})
+                    device_id = device_info.get('id')
+                    if device_id:
+                        logger.debug(f"获取到设备ID: {device_id}")
+                        return device_id
                                 
         except Exception as e:
             logger.error(f"获取设备ID失败: {e}")
@@ -105,8 +105,12 @@ class WAFCollector:
         """获取所有站点信息"""
         try:
             response = self.session.get(
-                f"{self.waf_host}/api/v1/app/list",
-                params={"_ts": int(time.time() * 1000)},
+                f"{self.waf_host}/api/v1/website/site/",
+                params={
+                    "page": 1,
+                    "per_page": 1000,
+                    "_ts": int(time.time() * 1000)
+                },
                 timeout=30
             )
             
@@ -115,18 +119,19 @@ class WAFCollector:
                 logger.debug(f"站点列表响应数据: {data}")
                 sites = []
                 
-                # 处理响应数据
-                items = data.get('data', {}).get('rows', [])
-                for app in items:
-                    site = {
-                        'id': app.get('id'),
-                        'name': app.get('name'),
-                        'enabled': app.get('status') == 1,  # 状态1表示启用
-                        'struct_id': app.get('struct_id', app.get('id'))  # 使用struct_id或id
-                    }
-                    sites.append(site)
-                
-                logger.info(f"发现 {len(sites)} 个站点")
+                if data.get("code") == "SUCCESS":
+                    # 处理响应数据
+                    items = data.get("data", {}).get("result", [])
+                    for site in items:
+                        site_obj = {
+                            'id': site.get('_pk', ''),
+                            'name': site.get('name', ''),
+                            'enabled': site.get('status', 0) == 1,  # 状态1表示启用
+                            'struct_id': site.get('struct_pk', '')  # struct_pk是关联的设备ID
+                        }
+                        sites.append(site_obj)
+                    
+                    logger.info(f"发现 {len(sites)} 个站点")
                 return sites
                     
         except Exception as e:
@@ -137,29 +142,29 @@ class WAFCollector:
     def get_traffic_data(self, app_id, device_id):
         """获取站点流量数据"""
         try:
-            now = int(time.time())
-            start_time = now - 300  # 5分钟前
-            
+            # 使用流量日志API
             params = {
                 '_ts': int(time.time() * 1000),
-                'app_id': app_id,
-                'struct_id': device_id,
-                'stat_type': 'avg',
-                'before': 5,  # 5分钟前的数据
-                'interval': 300  # 5分钟间隔
+                'site_struct_pk': device_id,
+                'site_pk': app_id,
+                'offset': 0,
+                'limit': 1,
+                'start': int(time.time() - 300) * 1000,  # 5分钟前
+                'end': int(time.time()) * 1000
             }
             
             response = self.session.get(
-                f"{self.waf_host}/api/v1/stat/app_realtime/",
+                f"{self.waf_host}/api/v1/logs/traffic/",
                 params=params,
                 timeout=30
             )
             
             if response.status_code == 200:
                 data = response.json()
-                # 解析流量数据
-                if data and 'result' in data:
-                    results = data['result']
+                logger.debug(f"流量数据响应: {data}")
+                
+                if data.get("code") == "SUCCESS":
+                    results = data.get("data", {}).get("result", [])
                     if results and len(results) > 0:
                         # 获取最新的数据点
                         latest = results[-1] if isinstance(results, list) else results
@@ -235,7 +240,9 @@ class WAFCollector:
             
             # 获取流量数据
             if site['enabled']:
-                traffic_data = self.get_traffic_data(site['id'], device_id)
+                # 如果struct_id是"0"，使用实际的device_id
+                actual_device_id = device_id if site['struct_id'] == '0' else site['struct_id']
+                traffic_data = self.get_traffic_data(site['id'], actual_device_id)
                 
                 if traffic_data:
                     # 入站流量
