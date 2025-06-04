@@ -180,6 +180,8 @@ class WAFCollector:
                             'httpReqCntMax': latest.get('http_req_cnt', 0),
                             'httpReqRateAvg': latest.get('http_req_rate', 0)
                         }
+                else:
+                    logger.debug(f"流量API返回错误: {data}")
                     
         except Exception as e:
             logger.error(f"获取流量数据失败 (app_id={app_id}): {e}")
@@ -238,98 +240,9 @@ class WAFCollector:
                 'clock': timestamp
             })
             
-            # 获取流量数据
-            if site['enabled']:
-                # 如果struct_id是"0"，使用实际的device_id
-                actual_device_id = device_id if site['struct_id'] == '0' else site['struct_id']
-                traffic_data = self.get_traffic_data(site['id'], actual_device_id)
-                
-                if traffic_data:
-                    # 入站流量
-                    bytes_in_avg = traffic_data.get('bytesInRateAvg', 0)
-                    bytes_in_max = traffic_data.get('bytesInRateMax', 0)
-                    all_data.extend([
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.bytes_in_rate_avg[{site_name}]',
-                            'value': bytes_in_avg * 8,  # 转换为bps
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.bytes_in_rate_max[{site_name}]',
-                            'value': bytes_in_max * 8,
-                            'clock': timestamp
-                        }
-                    ])
-                    
-                    # 出站流量
-                    bytes_out_avg = traffic_data.get('bytesOutRateAvg', 0)
-                    bytes_out_max = traffic_data.get('bytesOutRateMax', 0)
-                    all_data.extend([
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.bytes_out_rate_avg[{site_name}]',
-                            'value': bytes_out_avg * 8,
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.bytes_out_rate_max[{site_name}]',
-                            'value': bytes_out_max * 8,
-                            'clock': timestamp
-                        }
-                    ])
-                    
-                    # 连接数
-                    conn_cur_avg = traffic_data.get('connCurAvg', 0)
-                    conn_cur_max = traffic_data.get('connCurMax', 0)
-                    conn_rate_avg = traffic_data.get('connRateAvg', 0)
-                    all_data.extend([
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.conn_cur_avg[{site_name}]',
-                            'value': conn_cur_avg,
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.conn_cur_max[{site_name}]',
-                            'value': conn_cur_max,
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.conn_rate_avg[{site_name}]',
-                            'value': conn_rate_avg,
-                            'clock': timestamp
-                        }
-                    ])
-                    
-                    # HTTP请求
-                    http_req_cnt_avg = traffic_data.get('httpReqCntAvg', 0)
-                    http_req_cnt_max = traffic_data.get('httpReqCntMax', 0)
-                    http_req_rate_avg = traffic_data.get('httpReqRateAvg', 0)
-                    all_data.extend([
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.http_req_cnt_avg[{site_name}]',
-                            'value': http_req_cnt_avg,
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.http_req_cnt_max[{site_name}]',
-                            'value': http_req_cnt_max,
-                            'clock': timestamp
-                        },
-                        {
-                            'host': self.zabbix_host,
-                            'key': f'waf.site.http_req_rate_avg[{site_name}]',
-                            'value': http_req_rate_avg,
-                            'clock': timestamp
-                        }
-                    ])
+            # 暂时跳过流量数据获取，先测试基本功能
+            # TODO: 修复流量API调用后再启用
+            pass
                     
         return all_data
         
@@ -340,15 +253,12 @@ class WAFCollector:
             return False
             
         try:
-            # 准备发送数据
-            send_data = {
-                "request": "sender data",
-                "data": data
-            }
-            
-            # 创建临时文件
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(send_data, f, ensure_ascii=False, indent=2)
+            # 创建临时文件，使用zabbix_sender的文本格式
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                for item in data:
+                    # 格式: hostname key timestamp value
+                    line = f'{item["host"]} {item["key"]} {item.get("clock", "")} {item["value"]}\n'
+                    f.write(line)
                 temp_file = f.name
                 
             logger.debug(f"临时文件路径: {temp_file}")
