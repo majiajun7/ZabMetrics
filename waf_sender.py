@@ -15,17 +15,17 @@ import argparse
 import logging
 import requests
 import urllib3
-from datetime import datetime
-from subprocess import Popen, PIPE, DEVNULL
+from subprocess import Popen, PIPE
 import tempfile
 
 # 禁用SSL警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# 配置日志
+# 配置日志 - 默认输出到stderr，避免干扰stdout的返回值
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stderr  # 重要：日志输出到stderr，不影响stdout
 )
 logger = logging.getLogger(__name__)
 
@@ -672,12 +672,17 @@ def main():
     parser.add_argument('--zabbix-server', required=True, help='Zabbix服务器地址')
     parser.add_argument('--zabbix-host', required=True, help='Zabbix中的主机名')
     parser.add_argument('--debug', action='store_true', help='启用调试模式')
+    parser.add_argument('--quiet', action='store_true', help='静默模式，不输出日志')
     
     args = parser.parse_args()
     
-    # 设置日志级别
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+    # 配置日志
+    if args.quiet:
+        # 静默模式：禁用所有日志输出
+        logging.getLogger().setLevel(logging.CRITICAL + 1)
+    else:
+        # 设置日志级别
+        logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
         
     # 创建采集器并运行
     collector = WAFCollector(
@@ -687,10 +692,14 @@ def main():
         args.zabbix_host
     )
     
-    if collector.run():
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    # 执行数据采集
+    success = collector.run()
+    
+    # 输出结果：0表示成功，1表示失败（符合Zabbix外部检查的期望）
+    print(0 if success else 1)
+    
+    # 仍然使用sys.exit返回正确的退出码
+    sys.exit(0 if success else 1)
 
 if __name__ == '__main__':
     main()

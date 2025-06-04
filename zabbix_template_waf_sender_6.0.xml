@@ -4,7 +4,7 @@
     <date>2024-01-22T15:07:42Z</date>
     <templates>
         <template>
-            <uuid>e4f876c386a648afae610490267e44b4</uuid>
+            <uuid>48caa3c7c084438894b1831156b34ce7</uuid>
             <template>Template WAF Traffic Monitor Sender</template>
             <name>Template WAF Traffic Monitor Sender</name>
             <description>明御WAF流量监控模板 - Zabbix Sender模式，支持批量数据采集</description>
@@ -15,7 +15,7 @@
             </groups>
             <items>
                 <item>
-                    <uuid>6389495c1b7d43fe920b215a64183e83</uuid>
+                    <uuid>6e98f61efcb844cb8705638e735da75a</uuid>
                     <name>WAF数据采集器状态</name>
                     <type>TRAP</type>
                     <key>waf.collector.status</key>
@@ -32,7 +32,7 @@
                     </tags>
                 </item>
                 <item>
-                    <uuid>44e08fc995c04b359726f90e9e863c6b</uuid>
+                    <uuid>32fbff6780914b32b0e3856dac86edbd</uuid>
                     <name>WAF数据采集时间</name>
                     <type>TRAP</type>
                     <key>waf.collector.timestamp</key>
@@ -49,10 +49,27 @@
                         </tag>
                     </tags>
                 </item>
+                <item>
+                    <uuid>42d0b118f222441f8e270804660e56f4</uuid>
+                    <name>WAF数据采集触发器</name>
+                    <type>EXTERNAL</type>
+                    <key>waf_sender.py["--waf-host","{$WAF.HOST}","--token","{$WAF.TOKEN}","--zabbix-server","{$ZABBIX.SERVER}","--zabbix-host","{HOST.HOST}","--quiet"]</key>
+                    <delay>1m</delay>
+                    <history>1d</history>
+                    <trends>7d</trends>
+                    <value_type>UNSIGNED</value_type>
+                    <description>触发WAF数据采集，返回0表示成功，非0表示失败</description>
+                    <tags>
+                        <tag>
+                            <tag>component</tag>
+                            <value>trigger</value>
+                        </tag>
+                    </tags>
+                </item>
             </items>
             <discovery_rules>
                 <discovery_rule>
-                    <uuid>9c0f21c9d8ee4f37887b3b062f20c970</uuid>
+                    <uuid>de9fdfcf6f84413fa726a404273433d6</uuid>
                     <name>WAF站点发现</name>
                     <type>TRAP</type>
                     <key>waf.sites.discovery</key>
@@ -61,7 +78,7 @@
                     <description>自动发现WAF中的所有站点</description>
                     <item_prototypes>
                         <item_prototype>
-                            <uuid>2ba0b09b215543ae945a6a5336fc0e70</uuid>
+                            <uuid>b49bf0bc078a42d39f4ab15a46b8a5f9</uuid>
                             <name>站点 {#SITE_NAME} - 状态</name>
                             <type>TRAP</type>
                             <key>waf.site.status[{#SITE_NAME}]</key>
@@ -93,7 +110,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>185de1e706cb4daa9eecc796d1858b86</uuid>
+                            <uuid>b889512ab503488fbc910039575bc023</uuid>
                             <name>站点 {#SITE_NAME} - 入站流量速率(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.bytes_in_rate_avg[{#SITE_NAME}]</key>
@@ -119,7 +136,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>6815f9cb7b2b4a1a9171c6362ca3a840</uuid>
+                            <uuid>212ebd5399ec4e0daf44ad5940515227</uuid>
                             <name>站点 {#SITE_NAME} - 入站流量速率(最大)</name>
                             <type>TRAP</type>
                             <key>waf.site.bytes_in_rate_max[{#SITE_NAME}]</key>
@@ -145,7 +162,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>fde3f49be36d4acda043a8b870927a46</uuid>
+                            <uuid>0f61b6ab1f49404c9b4efec0ed0f4497</uuid>
                             <name>站点 {#SITE_NAME} - 出站流量速率(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.bytes_out_rate_avg[{#SITE_NAME}]</key>
@@ -171,7 +188,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>77b73182c4e64e78a5ebf7bdbcdf3b8e</uuid>
+                            <uuid>f7ee1cbbc3854497ad5ff7bd8e6ce420</uuid>
                             <name>站点 {#SITE_NAME} - 出站流量速率(最大)</name>
                             <type>TRAP</type>
                             <key>waf.site.bytes_out_rate_max[{#SITE_NAME}]</key>
@@ -197,7 +214,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>81a82fcc8ee44e3281110a4c4235a881</uuid>
+                            <uuid>e8c97fca51cd491ab6bf88d0cc1eb273</uuid>
                             <name>站点 {#SITE_NAME} - 当前连接数(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.conn_cur_avg[{#SITE_NAME}]</key>
@@ -218,7 +235,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>0f6e84cf998f4b8db9b6aa15273e4ecf</uuid>
+                            <uuid>47e82dc181c341e79f9dc545b7697c17</uuid>
                             <name>站点 {#SITE_NAME} - 当前连接数(最大)</name>
                             <type>TRAP</type>
                             <key>waf.site.conn_cur_max[{#SITE_NAME}]</key>
@@ -239,7 +256,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>26d3e49df6144dcda073d9b7006ebabe</uuid>
+                            <uuid>d973dc18228042689c2e49deb6475c2b</uuid>
                             <name>站点 {#SITE_NAME} - 连接速率(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.conn_rate_avg[{#SITE_NAME}]</key>
@@ -261,7 +278,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>3a788badd2be4c21a10d8e660344c6bc</uuid>
+                            <uuid>57816ac8c8a0403eab34b7692216cccd</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求数(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.http_req_cnt_avg[{#SITE_NAME}]</key>
@@ -282,7 +299,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>d25e2f553588438a9429fb8a5bc968a2</uuid>
+                            <uuid>8704a004e5a44c7c973cbc2a7ae70a1a</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求数(最大)</name>
                             <type>TRAP</type>
                             <key>waf.site.http_req_cnt_max[{#SITE_NAME}]</key>
@@ -303,7 +320,7 @@
                             </tags>
                         </item_prototype>
                         <item_prototype>
-                            <uuid>f98c56c00bec45e5a65b82ca9f55531e</uuid>
+                            <uuid>9405417ef73c48e396754cf6db57f4eb</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求速率(平均)</name>
                             <type>TRAP</type>
                             <key>waf.site.http_req_rate_avg[{#SITE_NAME}]</key>
@@ -327,7 +344,7 @@
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <uuid>7c0c1fecacb949ebaf9fecdf2dd4189e</uuid>
+                            <uuid>a9cf31c3a7d84306bd05dcef002e01e1</uuid>
                             <expression>last(/Template WAF Traffic Monitor Sender/waf.site.status[{#SITE_NAME}])=0</expression>
                             <name>站点 {#SITE_NAME} 已禁用</name>
                             <priority>WARNING</priority>
@@ -341,7 +358,7 @@
                             </tags>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <uuid>9b861c1732584ecd823f74884b78ec66</uuid>
+                            <uuid>5943c99c295c443ca91fe182a96fdf06</uuid>
                             <expression>avg(/Template WAF Traffic Monitor Sender/waf.site.bytes_in_rate_avg[{#SITE_NAME}],5m)&gt;{$WAF.TRAFFIC.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} 入站流量过高</name>
                             <event_name>站点 {#SITE_NAME}: 入站流量过高 (超过 {$WAF.TRAFFIC.MAX.WARN} 5分钟)</event_name>
@@ -356,7 +373,7 @@
                             </tags>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <uuid>48de1f020f5346608cf96bfd3e413108</uuid>
+                            <uuid>e840c729c274403c8ef25d373698c333</uuid>
                             <expression>avg(/Template WAF Traffic Monitor Sender/waf.site.conn_cur_avg[{#SITE_NAME}],5m)&gt;{$WAF.CONN.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} 连接数过高</name>
                             <event_name>站点 {#SITE_NAME}: 连接数过高 (超过 {$WAF.CONN.MAX.WARN} 5分钟)</event_name>
@@ -371,7 +388,7 @@
                             </tags>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <uuid>dca5ead41b164ff291dc9c691cfad40c</uuid>
+                            <uuid>f6c8ed3935cb42b3acdb6854732e7506</uuid>
                             <expression>avg(/Template WAF Traffic Monitor Sender/waf.site.http_req_rate_avg[{#SITE_NAME}],5m)&gt;{$WAF.REQ_RATE.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} HTTP请求速率过高</name>
                             <event_name>站点 {#SITE_NAME}: HTTP请求速率过高 (超过 {$WAF.REQ_RATE.MAX.WARN} 5分钟)</event_name>
@@ -386,7 +403,7 @@
                             </tags>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <uuid>ffbac40b51d442b7ab697d37018f7b8a</uuid>
+                            <uuid>c5a12ed6a6bc43f4854df5517f5b200b</uuid>
                             <expression>nodata(/Template WAF Traffic Monitor Sender/waf.site.bytes_in_rate_avg[{#SITE_NAME}],30m)=1</expression>
                             <name>站点 {#SITE_NAME} 无法获取流量数据</name>
                             <event_name>站点 {#SITE_NAME}: 30分钟内无法获取流量数据</event_name>
@@ -409,7 +426,7 @@
                     </trigger_prototypes>
                     <graph_prototypes>
                         <graph_prototype>
-                            <uuid>d30bed9b6d14455eb6d7d3916098cff7</uuid>
+                            <uuid>9f62fc0f4f0c4d0dbdff2a4e3f64db56</uuid>
                             <name>站点 {#SITE_NAME} - 流量趋势</name>
                             <graph_items>
                                 <graph_item>
@@ -448,7 +465,7 @@
                             </graph_items>
                         </graph_prototype>
                         <graph_prototype>
-                            <uuid>d5b3c77a4b2b44d2bb02e0be586c3af9</uuid>
+                            <uuid>58dcfb9398c34856aee5b23d667cd880</uuid>
                             <name>站点 {#SITE_NAME} - 连接数趋势</name>
                             <graph_items>
                                 <graph_item>
@@ -479,7 +496,7 @@
                             </graph_items>
                         </graph_prototype>
                         <graph_prototype>
-                            <uuid>db53410a0b244fe39dd6040ad785bda3</uuid>
+                            <uuid>dd54a65aba74407f9085172e9bb284b1</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求趋势</name>
                             <graph_items>
                                 <graph_item>
@@ -524,6 +541,21 @@
             </tags>
             <macros>
                 <macro>
+                    <macro>{$WAF.HOST}</macro>
+                    <value>https://10.21.30.5:8443</value>
+                    <description>WAF管理地址</description>
+                </macro>
+                <macro>
+                    <macro>{$WAF.TOKEN}</macro>
+                    <value>YOUR_TOKEN_HERE</value>
+                    <description>WAF API Token</description>
+                </macro>
+                <macro>
+                    <macro>{$ZABBIX.SERVER}</macro>
+                    <value>127.0.0.1</value>
+                    <description>Zabbix服务器地址</description>
+                </macro>
+                <macro>
                     <macro>{$WAF.TRAFFIC.MAX.WARN}</macro>
                     <value>1048576</value>
                     <description>流量告警阈值(Bps)，默认1MB/s</description>
@@ -541,7 +573,7 @@
             </macros>
             <valuemaps>
                 <valuemap>
-                    <uuid>2bff266c841049928f85d14009ca94b7</uuid>
+                    <uuid>71d78377120c4b3ba6424c7f1ce61033</uuid>
                     <name>站点状态</name>
                     <mappings>
                         <mapping>
