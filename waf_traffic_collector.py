@@ -80,17 +80,25 @@ class WAFTrafficCollector:
         # 保存原始device_id
         original_device_id = device_id
         
-        # 如果device_id是"0"，立即尝试查找实际的device_id
-        if original_device_id == "0":
+        # 如果device_id是"auto"、"0"或空，需要自动发现
+        if not device_id or device_id in ["0", "auto"]:
             if debug:
-                print("检测到device_id为'0'，开始自动发现实际的device_id...")
-            # 直接尝试查找有效的device_id，不浪费时间尝试"0"
+                print(f"device_id为'{device_id}'，需要自动发现实际的device_id...")
+            # 直接调用查找方法，它会尝试多种方式找到正确的UUID格式的device_id
             actual_device_id = self._find_actual_device_id(app_id, debug)
             if actual_device_id:
                 if debug:
                     print(f"找到有效的device_id: {actual_device_id}")
                 device_id = actual_device_id
                 original_device_id = actual_device_id
+            else:
+                # 如果还是找不到，尝试使用设备序列号
+                device_serial = self.get_device_id()
+                if device_serial:
+                    if debug:
+                        print(f"使用设备序列号作为备用: {device_serial}")
+                    device_id = device_serial
+                    original_device_id = device_serial
         
         # 定义一个内部函数来尝试获取数据
         def try_get_data(test_device_id):

@@ -7,6 +7,7 @@
 
 import sys
 import json
+import time
 import argparse
 import requests
 import urllib3
@@ -104,6 +105,50 @@ class WAFSiteDiscovery:
         
         return mapping
     
+    def find_device_id_for_site(self, app_id):
+        """
+        为特定站点查找正确的device_id
+        
+        :param app_id: 站点ID
+        :return: device_id (UUID格式) 或 None
+        """
+        # 遍历所有站点类型的拓扑树
+        for site_type in ['transparent', 'reverse', 'traction', 'sniffer', 'bridge']:
+            tree_url = f"{self.host}/api/v1/website/tree/{site_type}/"
+            tree_response = requests.get(
+                tree_url,
+                headers=self.headers,
+                verify=False,
+                timeout=10
+            )
+            
+            if tree_response.status_code == 200:
+                tree_data = tree_response.json()
+                if tree_data.get("code") == "SUCCESS":
+                    tree_items = tree_data.get("data", [])
+                    
+                    # 递归查找包含该站点的集群
+                    def find_cluster_for_site(nodes, parent_cluster=None):
+                        for node in nodes:
+                            if node.get("struct_type") == "cluster":
+                                parent_cluster = node.get("_pk")
+                            elif node.get("struct_type") == "site" and node.get("_pk") == app_id:
+                                return parent_cluster
+                            
+                            # 递归查找子节点
+                            children = node.get("children", [])
+                            if children:
+                                result = find_cluster_for_site(children, parent_cluster)
+                                if result:
+                                    return result
+                        return None
+                    
+                    cluster_id = find_cluster_for_site(tree_items)
+                    if cluster_id and cluster_id not in ["0", "1"]:
+                        return cluster_id
+        
+        return None
+    
     def discover_sites(self):
         """
         发现所有站点
@@ -111,8 +156,8 @@ class WAFSiteDiscovery:
         :return: Zabbix LLD格式的JSON数据
         """
         try:
-            # 首先获取设备ID映射
-            device_mapping = self.get_device_mapping()
+            # 构建站点ID到实际device_id的映射
+            site_device_mapping = {}
             
             # 获取站点列表
             url = f"{self.host}/api/v1/website/site/"
@@ -134,6 +179,53 @@ class WAFSiteDiscovery:
                 if data.get("code") == "SUCCESS":
                     sites = data.get("data", {}).get("result", [])
                     
+                    # 先为每个站点查找正确的device_id
+                    print(f"发现 {len(sites)} 个站点，开始查找device_id...")
+                    for site in sites:
+                        site_id = site.get("_pk", "")
+                        struct_pk = site.get("struct_pk", "")
+                        
+                        # 如果struct_pk是"0"（全局配置），需要查找实际的device_id
+                        if struct_pk == "0":
+                            actual_device_id = self.find_device_id_for_site(site_id)
+                            if actual_device_id:
+                                site_device_mapping[site_id] = actual_device_id
+                                print(f"站点 {site.get('name')} ({site_id}) -> device_id: {actual_device_id}")
+                            else:
+                                # 如果找不到，尝试通过实际请求流量API来探测
+                                test_url = f"{self.host}/api/v1/logs/traffic/"
+                                
+                                # 尝试一些常见的device_id格式
+                                for test_id in [site_id, struct_pk]:
+                                    if test_id and test_id != "0":
+                                        test_params = {
+                                            "type": "mins",
+                                            "app_id": site_id,
+                                            "device_id": test_id,
+                                            "_ts": int(time.time() * 1000)
+                                        }
+                                        try:
+                                            test_response = requests.get(
+                                                test_url,
+                                                headers=self.headers,
+                                                params=test_params,
+                                                verify=False,
+                                                timeout=5
+                                            )
+                                            if test_response.status_code == 200:
+                                                test_data = test_response.json()
+                                                if test_data.get("code") == "SUCCESS":
+                                                    result = test_data.get("data", {}).get("result", [])
+                                                    if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+                                                        site_device_mapping[site_id] = test_id
+                                                        print(f"通过测试找到站点 {site.get('name')} 的device_id: {test_id}")
+                                                        break
+                                        except:
+                                            pass
+                        else:
+                            # struct_pk不是"0"，直接使用
+                            site_device_mapping[site_id] = struct_pk
+                    
                     # 构建Zabbix LLD格式的数据
                     discovery_data = {
                         "data": []
@@ -141,26 +233,23 @@ class WAFSiteDiscovery:
                     
                     for site in sites:
                         site_id = site.get("_pk", "")
+                        site_type = site.get("type", "")
                         struct_pk = site.get("struct_pk", "")
                         
-                        # 从映射中获取实际的device_id
-                        actual_device_id = device_mapping.get(site_id, struct_pk)
-                        
-                        # 如果struct_pk是"0"，使用映射中的值
-                        if struct_pk == "0" and site_id in device_mapping:
-                            struct_pk = device_mapping[site_id]
+                        # 使用之前找到的device_id
+                        effective_device_id = site_device_mapping.get(site_id, struct_pk)
                         
                         # 获取站点基本信息
                         site_info = {
                             "{#SITE_ID}": site_id,
                             "{#SITE_NAME}": site.get("name", ""),
-                            "{#SITE_TYPE}": site.get("type", ""),
+                            "{#SITE_TYPE}": site_type,
                             "{#SITE_IP}": site.get("ip_set", ""),
                             "{#SITE_PORT}": ",".join(map(str, site.get("port", []))),
                             "{#SITE_DOMAIN}": ",".join(site.get("domain", [])),
                             "{#SITE_ENABLE}": "1" if site.get("enable", False) else "0",
-                            "{#STRUCT_ID}": struct_pk,  # 这个值会被waf_traffic_collector.py使用
-                            "{#DEVICE_ID}": actual_device_id  # 备用的设备ID
+                            "{#STRUCT_ID}": effective_device_id,  # 使用找到的device_id
+                            "{#DEVICE_ID}": effective_device_id   # 备用
                         }
                         
                         discovery_data["data"].append(site_info)
