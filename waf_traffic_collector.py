@@ -57,20 +57,25 @@ class WAFTrafficCollector:
         except Exception:
             return None
     
-    def get_traffic_data(self, app_id, device_id=None):
+    def get_traffic_data(self, app_id, device_id=None, debug=False):
         """
         获取指定站点的流量监控数据
         
         :param app_id: 站点ID
         :param device_id: 设备ID（可选）
+        :param debug: 是否启用调试模式
         :return: 返回最新的流量数据
         """
         # 如果没有提供device_id，尝试自动获取
         if not device_id:
             device_id = self.get_device_id()
+            if debug:
+                print(f"自动获取的设备ID: {device_id}")
             if not device_id:
                 # 如果无法获取设备ID，使用默认值
                 device_id = "default"
+                if debug:
+                    print("无法获取设备ID，使用默认值: default")
         
         url = f"{self.host}/api/v1/logs/traffic/"
         params = {
@@ -79,6 +84,10 @@ class WAFTrafficCollector:
             "device_id": device_id,
             "_ts": int(time.time() * 1000)
         }
+        
+        if debug:
+            print(f"请求URL: {url}")
+            print(f"请求参数: {params}")
         
         try:
             response = requests.get(
@@ -89,8 +98,13 @@ class WAFTrafficCollector:
                 timeout=10
             )
             
+            if debug:
+                print(f"响应状态码: {response.status_code}")
+            
             if response.status_code == 200:
                 data = response.json()
+                if debug:
+                    print(f"响应数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
                 if data.get("code") == "SUCCESS":
                     return data.get("data", {}).get("result", [])
                 else:
@@ -99,7 +113,9 @@ class WAFTrafficCollector:
             else:
                 return []
                 
-        except Exception:
+        except Exception as e:
+            if debug:
+                print(f"请求异常: {e}")
             return []
     
     def get_metric(self, app_id, metric_name, device_id=None):
@@ -241,6 +257,7 @@ def main():
     parser.add_argument('--metric', help='要获取的指标名称')
     parser.add_argument('--all', action='store_true', help='获取所有指标')
     parser.add_argument('--check', action='store_true', help='检查站点状态')
+    parser.add_argument('--debug', action='store_true', help='调试模式')
     
     args = parser.parse_args()
     
@@ -257,6 +274,12 @@ def main():
         metrics = collector.get_all_metrics(args.app_id, args.device_id)
         print(metrics)
     elif args.metric:
+        # 如果是调试模式，先打印原始数据
+        if args.debug:
+            traffic_data = collector.get_traffic_data(args.app_id, args.device_id, debug=True)
+            print("---返回的流量数据---")
+            print(json.dumps(traffic_data, indent=2, ensure_ascii=False))
+            print("---")
         # 获取单个指标
         value = collector.get_metric(args.app_id, args.metric, args.device_id)
         print(value)
