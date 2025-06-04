@@ -126,7 +126,7 @@ class WAFCollector:
                         site_obj = {
                             'id': site.get('_pk', ''),
                             'name': site.get('name', ''),
-                            'enabled': site.get('status', 0) == 1,  # 状态1表示启用
+                            'enabled': site.get('enable', False),  # enable字段表示启用状态
                             'struct_id': site.get('struct_pk', '')  # struct_pk是关联的设备ID
                         }
                         sites.append(site_obj)
@@ -348,16 +348,31 @@ class WAFCollector:
             
             # 创建临时文件
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(send_data, f)
+                json.dump(send_data, f, ensure_ascii=False, indent=2)
                 temp_file = f.name
                 
+            logger.debug(f"临时文件路径: {temp_file}")
+            logger.debug(f"发送数据样例: {json.dumps(data[:2], ensure_ascii=False)}")
+                
             try:
+                # 检查zabbix_sender是否存在
+                import shutil
+                zabbix_sender_path = shutil.which('zabbix_sender')
+                if not zabbix_sender_path:
+                    logger.error("zabbix_sender命令未找到，请先安装zabbix-sender")
+                    return False
+                    
+                logger.debug(f"使用zabbix_sender: {zabbix_sender_path}")
+                
                 # 使用zabbix_sender发送
                 cmd = [
-                    'zabbix_sender',
+                    zabbix_sender_path,
                     '-z', self.zabbix_server,
-                    '-i', temp_file
+                    '-i', temp_file,
+                    '-vv'  # 增加详细输出
                 ]
+                
+                logger.debug(f"执行命令: {' '.join(cmd)}")
                 
                 process = Popen(cmd, stdout=PIPE, stderr=PIPE)
                 stdout, stderr = process.communicate()
@@ -369,6 +384,8 @@ class WAFCollector:
                     return True
                 else:
                     logger.error(f"Zabbix sender失败: {stderr.decode()}")
+                    if stdout:
+                        logger.error(f"标准输出: {stdout.decode()}")
                     return False
                     
             finally:
