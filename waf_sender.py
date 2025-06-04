@@ -263,6 +263,11 @@ class WAFCollector:
                 
             logger.debug(f"临时文件路径: {temp_file}")
             logger.debug(f"发送数据样例: {json.dumps(data[:2], ensure_ascii=False)}")
+            
+            # 输出文件内容以便调试
+            with open(temp_file, 'r') as f:
+                content = f.read()
+                logger.debug(f"临时文件前500字符:\n{content[:500]}")
                 
             try:
                 # 检查zabbix_sender是否存在
@@ -279,7 +284,8 @@ class WAFCollector:
                     zabbix_sender_path,
                     '-z', self.zabbix_server,
                     '-i', temp_file,
-                    '-vv'  # 增加详细输出
+                    '-vv',  # 增加详细输出
+                    '-T'    # 打印失败的监控项
                 ]
                 
                 logger.debug(f"执行命令: {' '.join(cmd)}")
