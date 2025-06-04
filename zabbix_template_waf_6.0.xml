@@ -399,7 +399,7 @@
                             <dependencies>
                                 <dependency>
                                     <name>站点 {#SITE_NAME} 已禁用</name>
-                                    <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--check"])=0</expression>
+                                    <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--check"])=0</expression>
                                 </dependency>
                             </dependencies>
                             <tags>

@@ -34,10 +34,27 @@ class WAFSiteDiscovery:
         获取设备ID映射关系
         尝试从集群拓扑中获取实际的设备ID
         
-        :return: dict，key为struct_pk，value为实际的device_id
+        :return: dict，key为app_id，value为实际的device_id
         """
         mapping = {}
+        site_to_cluster = {}  # 站点ID到集群ID的映射
+        
         try:
+            # 首先获取设备信息
+            device_info_url = f"{self.host}/api/v1/device/info/"
+            response = requests.get(
+                device_info_url,
+                headers=self.headers,
+                verify=False,
+                timeout=10
+            )
+            
+            device_serial = None
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "SUCCESS":
+                    device_serial = data.get("data", {}).get("serial", "")
+            
             # 尝试获取集群拓扑信息
             for site_type in ['transparent', 'reverse', 'traction', 'sniffer', 'bridge']:
                 url = f"{self.host}/api/v1/website/tree/{site_type}/"
@@ -52,26 +69,36 @@ class WAFSiteDiscovery:
                     data = response.json()
                     if data.get("code") == "SUCCESS":
                         tree_data = data.get("data", [])
-                        for item in tree_data:
-                            if item.get("struct_type") == "global" and item.get("_pk") == "0":
-                                # 对于全局配置，需要找到实际的设备ID
-                                # 这可能需要额外的API调用
-                                continue
-                            
-                            # 递归遍历树结构
-                            def traverse_tree(node, device_id=None):
+                        
+                        # 递归查找站点和它所属的集群
+                        def find_sites_in_tree(nodes, parent_cluster=None):
+                            for node in nodes:
+                                node_type = node.get("struct_type")
                                 node_id = node.get("_pk")
-                                if node_id:
-                                    mapping[node_id] = device_id or node_id
                                 
-                                for child in node.get("children", []):
-                                    # 如果是集群节点，使用集群ID作为device_id
-                                    if child.get("struct_type") == "cluster":
-                                        traverse_tree(child, child.get("_pk"))
-                                    else:
-                                        traverse_tree(child, device_id)
-                            
-                            traverse_tree(item)
+                                if node_type == "cluster":
+                                    parent_cluster = node_id
+                                elif node_type == "site":
+                                    # 记录站点ID到集群ID的映射
+                                    site_to_cluster[node_id] = parent_cluster
+                                
+                                # 递归处理子节点
+                                children = node.get("children", [])
+                                if children:
+                                    find_sites_in_tree(children, parent_cluster)
+                        
+                        find_sites_in_tree(tree_data)
+            
+            # 构建最终的映射关系
+            for site_id, cluster_id in site_to_cluster.items():
+                if cluster_id and cluster_id not in ["0", "1"]:
+                    mapping[site_id] = cluster_id
+                elif device_serial:
+                    # 如果没有集群ID，使用设备序列号
+                    mapping[site_id] = device_serial
+                else:
+                    mapping[site_id] = "0"  # 默认值
+                    
         except Exception:
             pass
         
@@ -113,23 +140,27 @@ class WAFSiteDiscovery:
                     }
                     
                     for site in sites:
+                        site_id = site.get("_pk", "")
                         struct_pk = site.get("struct_pk", "")
                         
-                        # 尝试获取实际的device_id
-                        # 如果struct_pk是"0"，可能需要特殊处理
-                        actual_device_id = device_mapping.get(struct_pk, struct_pk)
+                        # 从映射中获取实际的device_id
+                        actual_device_id = device_mapping.get(site_id, struct_pk)
+                        
+                        # 如果struct_pk是"0"，使用映射中的值
+                        if struct_pk == "0" and site_id in device_mapping:
+                            struct_pk = device_mapping[site_id]
                         
                         # 获取站点基本信息
                         site_info = {
-                            "{#SITE_ID}": site.get("_pk", ""),
+                            "{#SITE_ID}": site_id,
                             "{#SITE_NAME}": site.get("name", ""),
                             "{#SITE_TYPE}": site.get("type", ""),
                             "{#SITE_IP}": site.get("ip_set", ""),
                             "{#SITE_PORT}": ",".join(map(str, site.get("port", []))),
                             "{#SITE_DOMAIN}": ",".join(site.get("domain", [])),
                             "{#SITE_ENABLE}": "1" if site.get("enable", False) else "0",
-                            "{#STRUCT_ID}": struct_pk,
-                            "{#DEVICE_ID}": actual_device_id  # 添加实际的设备ID
+                            "{#STRUCT_ID}": struct_pk,  # 这个值会被waf_traffic_collector.py使用
+                            "{#DEVICE_ID}": actual_device_id  # 备用的设备ID
                         }
                         
                         discovery_data["data"].append(site_info)

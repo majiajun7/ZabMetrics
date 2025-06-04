@@ -80,6 +80,18 @@ class WAFTrafficCollector:
         # 保存原始device_id
         original_device_id = device_id
         
+        # 如果device_id是"0"，立即尝试查找实际的device_id
+        if original_device_id == "0":
+            if debug:
+                print("检测到device_id为'0'，开始自动发现实际的device_id...")
+            # 直接尝试查找有效的device_id，不浪费时间尝试"0"
+            actual_device_id = self._find_actual_device_id(app_id, debug)
+            if actual_device_id:
+                if debug:
+                    print(f"找到有效的device_id: {actual_device_id}")
+                device_id = actual_device_id
+                original_device_id = actual_device_id
+        
         # 定义一个内部函数来尝试获取数据
         def try_get_data(test_device_id):
             params = {
@@ -184,6 +196,15 @@ class WAFTrafficCollector:
                                                 return test_result
             except Exception:
                 pass
+            
+            # 方法3：如果还是没有找到，尝试使用获取的设备序列号
+            device_serial = self.get_device_id()
+            if device_serial and device_serial != original_device_id:
+                if debug:
+                    print(f"尝试使用设备序列号: {device_serial}")
+                test_result = try_get_data(device_serial)
+                if test_result and any(v != "-" for record in test_result for k, v in record.items() if k != "timestamp"):
+                    return test_result
         
         # 返回最后的结果（可能都是"-"）
         return result
@@ -313,6 +334,82 @@ class WAFTrafficCollector:
             
         except Exception:
             return 0
+    
+    def _find_actual_device_id(self, app_id, debug=False):
+        """
+        查找站点实际使用的device_id
+        
+        :param app_id: 站点ID
+        :param debug: 是否启用调试模式
+        :return: 实际的device_id或None
+        """
+        try:
+            # 先从设备信息获取
+            device_serial = self.get_device_id()
+            if device_serial:
+                if debug:
+                    print(f"尝试设备序列号作为device_id: {device_serial}")
+                # 快速测试这个device_id是否有效
+                url = f"{self.host}/api/v1/logs/traffic/"
+                params = {
+                    "type": "mins",
+                    "app_id": app_id,
+                    "device_id": device_serial,
+                    "_ts": int(time.time() * 1000)
+                }
+                response = requests.get(
+                    url,
+                    headers=self.headers,
+                    params=params,
+                    verify=False,
+                    timeout=10
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("code") == "SUCCESS":
+                        result = data.get("data", {}).get("result", [])
+                        if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+                            return device_serial
+            
+            # 从集群拓扑查找
+            for site_type in ['transparent', 'reverse', 'traction', 'sniffer', 'bridge']:
+                tree_url = f"{self.host}/api/v1/website/tree/{site_type}/"
+                tree_response = requests.get(
+                    tree_url,
+                    headers=self.headers,
+                    verify=False,
+                    timeout=10
+                )
+                if tree_response.status_code == 200:
+                    tree_data = tree_response.json()
+                    if tree_data.get("code") == "SUCCESS":
+                        tree_items = tree_data.get("data", [])
+                        # 递归查找包含该站点的集群
+                        def find_cluster_for_site(nodes, parent_cluster=None):
+                            for node in nodes:
+                                if node.get("struct_type") == "cluster":
+                                    parent_cluster = node.get("_pk")
+                                elif node.get("struct_type") == "site" and node.get("_pk") == app_id:
+                                    return parent_cluster
+                                # 递归查找子节点
+                                children = node.get("children", [])
+                                if children:
+                                    result = find_cluster_for_site(children, parent_cluster)
+                                    if result:
+                                        return result
+                            return None
+                        
+                        cluster_id = find_cluster_for_site(tree_items)
+                        if cluster_id and cluster_id not in ["0", "1"]:
+                            if debug:
+                                print(f"找到站点所属的集群ID: {cluster_id}")
+                            return cluster_id
+            
+            return None
+        except Exception as e:
+            if debug:
+                print(f"查找device_id时出错: {e}")
+            return None
 
 
 def main():
