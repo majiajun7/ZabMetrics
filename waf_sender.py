@@ -87,6 +87,7 @@ class WAFCollector:
             
             if response.status_code == 200:
                 data = response.json()
+                logger.debug(f"设备响应数据: {data}")
                 if data and 'result' in data:
                     # 遍历结果获取设备ID
                     for item in data.get('result', []):
@@ -111,6 +112,7 @@ class WAFCollector:
             
             if response.status_code == 200:
                 data = response.json()
+                logger.debug(f"站点列表响应数据: {data}")
                 sites = []
                 
                 # 处理响应数据
