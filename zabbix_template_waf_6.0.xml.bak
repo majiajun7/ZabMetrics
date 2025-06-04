@@ -104,7 +104,7 @@
                             <uuid>1a763a0324d64f25a4aca84dff755c26</uuid>
                             <name>站点 {#SITE_NAME} - 入站流量速率(最大)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_in_rate_max"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_max"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -130,7 +130,7 @@
                             <uuid>2ce61a6091654ebbb298cfd4f3f81935</uuid>
                             <name>站点 {#SITE_NAME} - 出站流量速率(平均)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_out_rate_avg"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_avg"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -156,7 +156,7 @@
                             <uuid>2d28553295b94ff2ae5a5db48a7d4157</uuid>
                             <name>站点 {#SITE_NAME} - 出站流量速率(最大)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_out_rate_max"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_max"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -182,7 +182,7 @@
                             <uuid>51bfdb24a4d845c7980487e9c03923bc</uuid>
                             <name>站点 {#SITE_NAME} - 当前连接数(平均)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_cur_avg"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -203,7 +203,7 @@
                             <uuid>8ce5133d4f774126a1a58852cc47ecce</uuid>
                             <name>站点 {#SITE_NAME} - 当前连接数(最大)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_cur_max"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_max"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -224,7 +224,7 @@
                             <uuid>ce3b9f9f5acf4f83a8c93200a55c7f84</uuid>
                             <name>站点 {#SITE_NAME} - 连接速率(平均)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_rate_avg"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_rate_avg"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -246,7 +246,7 @@
                             <uuid>78fd4549643a4690a5428dd5416f6799</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求数(平均)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_cnt_avg"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_avg"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -267,7 +267,7 @@
                             <uuid>12539ac74a42450a9e11e5aa35e5b430</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求数(最大)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_cnt_max"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_max"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -288,7 +288,7 @@
                             <uuid>edaac210b74f4fdd9a0b65b416ef6a6a</uuid>
                             <name>站点 {#SITE_NAME} - HTTP请求速率(平均)</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_rate_avg"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"]</key>
                             <delay>1m</delay>
                             <history>7d</history>
                             <trends>30d</trends>
@@ -310,7 +310,7 @@
                             <uuid>114988af94a844459665a28f772fff33</uuid>
                             <name>站点 {#SITE_NAME} - 所有指标数据</name>
                             <type>EXTERNAL</type>
-                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--all"]</key>
+                            <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--all"]</key>
                             <delay>5m</delay>
                             <history>1d</history>
                             <trends>0</trends>
@@ -331,7 +331,7 @@
                     <trigger_prototypes>
                         <trigger_prototype>
                             <uuid>6bb724f43a4342c88f55f0de700d39f7</uuid>
-                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--check"])=0</expression>
+                            <expression>last(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--check"])=0</expression>
                             <name>站点 {#SITE_NAME} 已禁用</name>
                             <priority>WARNING</priority>
                             <description>站点已被禁用</description>
@@ -345,7 +345,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>7170a2d9861a4c70a167f110127966b8</uuid>
-                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_in_rate_avg"],5m)&gt;{$WAF.TRAFFIC.MAX.WARN}</expression>
+                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"],5m)&gt;{$WAF.TRAFFIC.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} 入站流量过高</name>
                             <event_name>站点 {#SITE_NAME}: 入站流量过高 (超过 {$WAF.TRAFFIC.MAX.WARN} 5分钟)</event_name>
                             <priority>WARNING</priority>
@@ -360,7 +360,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>2baf26a48e2649eb9c5026b297ccf8a3</uuid>
-                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_cur_avg"],5m)&gt;{$WAF.CONN.MAX.WARN}</expression>
+                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"],5m)&gt;{$WAF.CONN.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} 连接数过高</name>
                             <event_name>站点 {#SITE_NAME}: 连接数过高 (超过 {$WAF.CONN.MAX.WARN} 5分钟)</event_name>
                             <priority>WARNING</priority>
@@ -375,7 +375,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>75a04f758c2448ad98ca16fbbc463bb2</uuid>
-                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_rate_avg"],5m)&gt;{$WAF.REQ_RATE.MAX.WARN}</expression>
+                            <expression>avg(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"],5m)&gt;{$WAF.REQ_RATE.MAX.WARN}</expression>
                             <name>站点 {#SITE_NAME} HTTP请求速率过高</name>
                             <event_name>站点 {#SITE_NAME}: HTTP请求速率过高 (超过 {$WAF.REQ_RATE.MAX.WARN} 5分钟)</event_name>
                             <priority>WARNING</priority>
@@ -390,7 +390,7 @@
                         </trigger_prototype>
                         <trigger_prototype>
                             <uuid>81d8c2ecec35481a936c6f108581bc1a</uuid>
-                            <expression>nodata(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_in_rate_avg"],30m)=1</expression>
+                            <expression>nodata(/Template WAF Traffic Monitor/waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"],30m)=1</expression>
                             <name>站点 {#SITE_NAME} 无法获取流量数据</name>
                             <event_name>站点 {#SITE_NAME}: 30分钟内无法获取流量数据</event_name>
                             <priority>WARNING</priority>
@@ -419,7 +419,7 @@
                                     <color>1A7C11</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_in_rate_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_avg"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -427,7 +427,7 @@
                                     <color>F63100</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_out_rate_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_avg"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -436,7 +436,7 @@
                                     <color>00611C</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_in_rate_max"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_in_rate_max"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -445,7 +445,7 @@
                                     <color>F7941D</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "bytes_out_rate_max"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "bytes_out_rate_max"]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -458,7 +458,7 @@
                                     <color>1A7C11</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_cur_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_avg"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -467,7 +467,7 @@
                                     <color>2774A4</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_cur_max"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_cur_max"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -476,7 +476,7 @@
                                     <color>F63100</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "conn_rate_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "conn_rate_avg"]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -490,7 +490,7 @@
                                     <color>1A7C11</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_rate_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_rate_avg"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -498,7 +498,7 @@
                                     <color>F63100</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_cnt_avg"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_avg"]</key>
                                     </item>
                                 </graph_item>
                                 <graph_item>
@@ -507,7 +507,7 @@
                                     <color>2774A4</color>
                                     <item>
                                         <host>Template WAF Traffic Monitor</host>
-                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--device-id", "{#STRUCT_ID}", "--metric", "http_req_cnt_max"]</key>
+                                        <key>waf_traffic_collector.py["--host", "{$WAF_HOST}", "--token", "{$WAF_TOKEN}", "--app-id", "{#SITE_ID}", "--metric", "http_req_cnt_max"]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>

@@ -1,4 +1,4 @@
-y#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 明御WAF流量数据采集脚本
@@ -77,14 +77,65 @@ class WAFTrafficCollector:
                 if debug:
                     print("无法获取设备ID，使用默认值: default")
         
-        # 根据网页版的参数，device_id应该是站点的struct_pk
-        # 如果传入的device_id是"0"（全局），则尝试获取实际的设备ID
-        actual_device_id = device_id
-        if device_id == "0" or device_id == "":
-            # 尝试从站点信息中获取实际的设备ID
-            site_url = f"{self.host}/api/v1/website/site/"
-            site_params = {"page": 1, "per_page": 1000}
+        # 保存原始device_id
+        original_device_id = device_id
+        
+        # 定义一个内部函数来尝试获取数据
+        def try_get_data(test_device_id):
+            params = {
+                "type": "mins",
+                "app_id": app_id,
+                "device_id": test_device_id,
+                "_ts": int(time.time() * 1000)
+            }
+            
+            if debug:
+                print(f"尝试device_id: {test_device_id}")
+                print(f"请求参数: {params}")
+            
             try:
+                response = requests.get(
+                    url,
+                    headers=self.headers,
+                    params=params,
+                    verify=False,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("code") == "SUCCESS":
+                        result = data.get("data", {}).get("result", [])
+                        # 检查是否有有效数据（不全是"-"）
+                        if result:
+                            for record in result:
+                                for key, value in record.items():
+                                    if key != "timestamp" and value != "-":
+                                        if debug:
+                                            print(f"找到有效数据，使用device_id: {test_device_id}")
+                                        return result
+                        return result
+            except Exception as e:
+                if debug:
+                    print(f"请求异常: {e}")
+            return []
+        
+        url = f"{self.host}/api/v1/logs/traffic/"
+        
+        # 首先尝试使用原始device_id
+        result = try_get_data(original_device_id)
+        if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+            return result
+        
+        # 如果原始device_id返回的都是"-"，尝试其他方式
+        if original_device_id == "0" or not any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
+            if debug:
+                print("原始device_id未返回有效数据，尝试查找实际设备ID...")
+            
+            # 方法1：从站点信息中查找可能的device_id
+            try:
+                site_url = f"{self.host}/api/v1/website/site/"
+                site_params = {"page": 1, "per_page": 1000}
                 site_response = requests.get(
                     site_url,
                     headers=self.headers,
@@ -98,54 +149,44 @@ class WAFTrafficCollector:
                         sites = site_data.get("data", {}).get("result", [])
                         for site in sites:
                             if site.get("_pk") == app_id:
-                                # 找到对应的站点，使用其struct_pk作为device_id
-                                actual_device_id = site.get("struct_pk", device_id)
-                                if debug:
-                                    print(f"从站点信息获取的实际设备ID: {actual_device_id}")
+                                struct_pk = site.get("struct_pk", "")
+                                if struct_pk and struct_pk != original_device_id:
+                                    test_result = try_get_data(struct_pk)
+                                    if test_result and any(v != "-" for record in test_result for k, v in record.items() if k != "timestamp"):
+                                        return test_result
                                 break
             except Exception:
                 pass
-        
-        url = f"{self.host}/api/v1/logs/traffic/"
-        params = {
-            "type": "mins",
-            "app_id": app_id,
-            "device_id": actual_device_id,
-            "_ts": int(time.time() * 1000)
-        }
-        
-        if debug:
-            print(f"请求URL: {url}")
-            print(f"请求参数: {params}")
-        
-        try:
-            response = requests.get(
-                url,
-                headers=self.headers,
-                params=params,
-                verify=False,
-                timeout=10
-            )
             
-            if debug:
-                print(f"响应状态码: {response.status_code}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                if debug:
-                    print(f"响应数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
-                if data.get("code") == "SUCCESS":
-                    return data.get("data", {}).get("result", [])
-                else:
-                    # 某些站点可能没有流量数据
-                    return []
-            else:
-                return []
-                
-        except Exception as e:
-            if debug:
-                print(f"请求异常: {e}")
-            return []
+            # 方法2：尝试从集群拓扑中查找
+            try:
+                for site_type in ['transparent', 'reverse', 'traction', 'sniffer', 'bridge']:
+                    tree_url = f"{self.host}/api/v1/website/tree/{site_type}/"
+                    tree_response = requests.get(
+                        tree_url,
+                        headers=self.headers,
+                        verify=False,
+                        timeout=10
+                    )
+                    if tree_response.status_code == 200:
+                        tree_data = tree_response.json()
+                        if tree_data.get("code") == "SUCCESS":
+                            tree_items = tree_data.get("data", [])
+                            for item in tree_items:
+                                for area in item.get("children", []):
+                                    for cluster in area.get("children", []):
+                                        cluster_id = cluster.get("_pk")
+                                        if cluster_id and cluster_id not in ["0", "1", original_device_id]:
+                                            test_result = try_get_data(cluster_id)
+                                            if test_result and any(v != "-" for record in test_result for k, v in record.items() if k != "timestamp"):
+                                                if debug:
+                                                    print(f"成功使用集群ID: {cluster_id}")
+                                                return test_result
+            except Exception:
+                pass
+        
+        # 返回最后的结果（可能都是"-"）
+        return result
     
     def get_metric(self, app_id, metric_name, device_id=None):
         """
