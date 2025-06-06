@@ -439,13 +439,13 @@ class WAFCollector:
                     {
                         'host': self.zabbix_host,
                         'key': f'waf.site.bytes_in_rate_avg[{site_name}]',
-                        'value': bytes_in_avg * 8,  # 转换为bps
+                        'value': bytes_in_avg,  # 已经是bps，无需转换
                         'clock': timestamp
                     },
                     {
                         'host': self.zabbix_host,
                         'key': f'waf.site.bytes_in_rate_max[{site_name}]',
-                        'value': bytes_in_max * 8,
+                        'value': bytes_in_max,
                         'clock': timestamp
                     }
                 ])
@@ -457,13 +457,13 @@ class WAFCollector:
                     {
                         'host': self.zabbix_host,
                         'key': f'waf.site.bytes_out_rate_avg[{site_name}]',
-                        'value': bytes_out_avg * 8,
+                        'value': bytes_out_avg,
                         'clock': timestamp
                     },
                     {
                         'host': self.zabbix_host,
                         'key': f'waf.site.bytes_out_rate_max[{site_name}]',
-                        'value': bytes_out_max * 8,
+                        'value': bytes_out_max,
                         'clock': timestamp
                     }
                 ])
