@@ -209,6 +209,11 @@ class WAFCollector:
                     data = response.json()
                     if data.get("code") == "SUCCESS":
                         result = data.get("data", {}).get("result", [])
+                        
+                        # 调试：打印API返回的原始数据
+                        if logger.level <= logging.DEBUG:
+                            logger.debug(f"device_id {test_device_id} 的原始响应数据: {result[:2] if result else '空列表'}")
+                        
                         # 检查是否有有效数据（不全是"-"）
                         if result:
                             for record in result:
