@@ -228,6 +228,13 @@ class WAFCollector:
         
         # 首先尝试原始device_id
         device_id, result = try_get_data(original_device_id)
+        
+        # 调试：检查result内容
+        if logger.level <= logging.DEBUG and result is not None:
+            logger.debug(f"原始device_id {original_device_id} 返回了 {len(result)} 条记录")
+            if len(result) > 0:
+                logger.debug(f"第一条记录: {result[0]}")
+        
         if result and any(v != "-" for record in result for k, v in record.items() if k != "timestamp"):
             return device_id
         
