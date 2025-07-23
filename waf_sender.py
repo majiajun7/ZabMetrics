@@ -407,6 +407,11 @@ class WAFCollector:
                 
                 if data.get("code") == "SUCCESS":
                     results = data.get("data", {}).get("result", [])
+                    
+                    # 调试：打印API返回的原始数据
+                    if logger.level <= logging.DEBUG:
+                        logger.debug(f"API返回的原始数据 (前3条): {results[:3] if results else '无数据'}")
+                    
                     if results and len(results) > 0:
                         # 处理所有数据点，而不是只返回第一个
                         for record in results:
