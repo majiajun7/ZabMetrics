@@ -36,7 +36,7 @@ class WAFCenterCollector:
     """WAF中心机数据采集器 - 支持多集群多域名"""
     
     def __init__(self, waf_host: str, token: str, zabbix_server: str, 
-                 zabbix_host: str, data_type: str = 'mins'):
+                 zabbix_host: str):
         """
         初始化采集器
         
@@ -45,13 +45,11 @@ class WAFCenterCollector:
             token: API认证令牌
             zabbix_server: Zabbix服务器地址
             zabbix_host: Zabbix中的主机名
-            data_type: 数据粒度类型 (mins/hours/days)
         """
         self.waf_host = waf_host.rstrip('/')
         self.token = token
         self.zabbix_server = zabbix_server
         self.zabbix_host = zabbix_host
-        self.data_type = data_type
         
         # HTTP会话配置
         self.session = requests.Session()
@@ -457,32 +455,24 @@ class WAFCenterCollector:
             last_run_time = self.get_last_run_time()
             
             if last_run_time:
+                # 有上次运行时间，进行增量采集
                 start_time = last_run_time
-                # 限制最大时间范围
-                max_time_ranges = {
-                    'mins': timedelta(hours=24),
-                    'hours': timedelta(days=7),
-                    'days': timedelta(days=30)
-                }
-                max_range = max_time_ranges.get(self.data_type, timedelta(hours=24))
+                # 限制最大时间范围为24小时，避免数据量过大
+                max_range = timedelta(hours=24)
                 min_start_time = end_time - max_range
                 
                 if start_time < min_start_time:
                     logger.warning(f"时间范围太大，限制为最近 {max_range}")
                     start_time = min_start_time
             else:
-                # 首次运行
-                time_windows = {
-                    'mins': timedelta(minutes=5),
-                    'hours': timedelta(hours=2),
-                    'days': timedelta(days=2)
-                }
-                time_window = time_windows.get(self.data_type, timedelta(minutes=5))
-                start_time = end_time - time_window
+                # 首次运行，默认采集最近1小时的数据
+                start_time = end_time - timedelta(hours=1)
+                logger.info("首次运行，采集最近1小时的数据")
             
             # 构建请求参数
+            # WAF API使用type=mins返回20秒间隔的数据点
             params = {
-                "type": self.data_type,
+                "type": "mins",  # 使用mins类型获取20秒间隔的数据
                 "app_id": site_id,
                 "device_id": device_id,
                 "timestamp__ge": start_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -496,7 +486,7 @@ class WAFCenterCollector:
                 logger.debug(f"使用namespace: {namespace}")
             
             response = self.session.get(
-                f"{self.waf_host}/api/v1/logs/traffic/",
+                f"{self.waf_host}/api/v2/logs/traffic/",
                 params=params,
                 timeout=30
             )
@@ -602,7 +592,6 @@ class WAFCenterCollector:
         try:
             data = {
                 'last_run_time': run_time.isoformat(),
-                'data_type': self.data_type,
                 'zabbix_host': self.zabbix_host,
                 'deployment_mode': self.deployment_mode
             }
@@ -1030,8 +1019,6 @@ def main():
     parser.add_argument('--token', required=True, help='API Token')
     parser.add_argument('--zabbix-server', required=True, help='Zabbix服务器地址')
     parser.add_argument('--zabbix-host', required=True, help='Zabbix中的主机名')
-    parser.add_argument('--data-type', choices=['mins', 'hours', 'days'], 
-                       default='mins', help='数据粒度类型')
     parser.add_argument('--debug', action='store_true', help='启用调试模式')
     
     args = parser.parse_args()
@@ -1045,8 +1032,7 @@ def main():
         waf_host=args.host,
         token=args.token,
         zabbix_server=args.zabbix_server,
-        zabbix_host=args.zabbix_host,
-        data_type=args.data_type
+        zabbix_host=args.zabbix_host
     )
     
     return collector.run()
