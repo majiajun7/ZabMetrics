@@ -515,18 +515,14 @@ class WAFCenterCollector:
                                 except Exception:
                                     pass
                             
-                            # 构建数据点
+                            # 构建数据点（只保留平均值）
                             data_point = {
                                 'timestamp': timestamp,
                                 'bytesInRateAvg': self._parse_metric(record.get('bytes_in_rate_avg')),
-                                'bytesInRateMax': self._parse_metric(record.get('bytes_in_rate_max')),
                                 'bytesOutRateAvg': self._parse_metric(record.get('bytes_out_rate_avg')),
-                                'bytesOutRateMax': self._parse_metric(record.get('bytes_out_rate_max')),
                                 'connCurAvg': self._parse_metric(record.get('conn_cur_avg')),
-                                'connCurMax': self._parse_metric(record.get('conn_cur_max')),
                                 'connRateAvg': self._parse_metric(record.get('conn_rate_avg')),
                                 'httpReqCntAvg': self._parse_metric(record.get('http_req_cnt_avg')),
-                                'httpReqCntMax': self._parse_metric(record.get('http_req_cnt_max')),
                                 'httpReqRateAvg': self._parse_metric(record.get('http_req_rate_avg'))
                             }
                             all_data_points.append(data_point)
@@ -542,14 +538,10 @@ class WAFCenterCollector:
             all_data_points.append({
                 'timestamp': int(time.time()),
                 'bytesInRateAvg': 0,
-                'bytesInRateMax': 0,
                 'bytesOutRateAvg': 0,
-                'bytesOutRateMax': 0,
                 'connCurAvg': 0,
-                'connCurMax': 0,
                 'connRateAvg': 0,
                 'httpReqCntAvg': 0,
-                'httpReqCntMax': 0,
                 'httpReqRateAvg': 0
             })
         
@@ -737,54 +729,45 @@ class WAFCenterCollector:
                     'clock': timestamp
                 })
                 
-                # 流量数据
+                # 流量数据（只保留平均值）
                 for data_point in traffic_data:
-                    # 入站流量
+                    # 入站流量平均值
                     all_data.append({
                         'host': self.zabbix_host,
                         'key': f"waf.site.traffic.in.avg[{site_key}]",
                         'value': data_point['bytesInRateAvg'],
                         'clock': data_point['timestamp']
                     })
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.traffic.in.max[{site_key}]",
-                        'value': data_point['bytesInRateMax'],
-                        'clock': data_point['timestamp']
-                    })
                     
-                    # 出站流量
+                    # 出站流量平均值
                     all_data.append({
                         'host': self.zabbix_host,
                         'key': f"waf.site.traffic.out.avg[{site_key}]",
                         'value': data_point['bytesOutRateAvg'],
                         'clock': data_point['timestamp']
                     })
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.traffic.out.max[{site_key}]",
-                        'value': data_point['bytesOutRateMax'],
-                        'clock': data_point['timestamp']
-                    })
                     
-                    # 连接数
+                    # 当前连接数平均值
                     all_data.append({
                         'host': self.zabbix_host,
                         'key': f"waf.site.conn.cur.avg[{site_key}]",
                         'value': data_point['connCurAvg'],
                         'clock': data_point['timestamp']
                     })
+                    
+                    # 连接速率平均值
                     all_data.append({
                         'host': self.zabbix_host,
-                        'key': f"waf.site.conn.cur.max[{site_key}]",
-                        'value': data_point['connCurMax'],
+                        'key': f"waf.site.conn.rate.avg[{site_key}]",
+                        'value': data_point['connRateAvg'],
                         'clock': data_point['timestamp']
                     })
                     
-                    # HTTP请求
+                    
+                    # HTTP请求速率平均值
                     all_data.append({
                         'host': self.zabbix_host,
-                        'key': f"waf.site.http.req.rate[{site_key}]",
+                        'key': f"waf.site.http.req.rate.avg[{site_key}]",
                         'value': data_point['httpReqRateAvg'],
                         'clock': data_point['timestamp']
                     })
