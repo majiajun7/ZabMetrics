@@ -19,6 +19,8 @@ from subprocess import Popen, PIPE
 import tempfile
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 # 禁用SSL警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -36,7 +38,7 @@ class WAFCenterCollector:
     """WAF中心机数据采集器 - 支持多集群多域名"""
     
     def __init__(self, waf_host: str, token: str, zabbix_server: str, 
-                 zabbix_host: str):
+                 zabbix_host: str, max_workers: int = 10):
         """
         初始化采集器
         
@@ -45,11 +47,13 @@ class WAFCenterCollector:
             token: API认证令牌
             zabbix_server: Zabbix服务器地址
             zabbix_host: Zabbix中的主机名
+            max_workers: 最大线程数，默认10
         """
         self.waf_host = waf_host.rstrip('/')
         self.token = token
         self.zabbix_server = zabbix_server
         self.zabbix_host = zabbix_host
+        self.max_workers = max_workers
         
         # HTTP会话配置
         self.session = requests.Session()
@@ -72,6 +76,9 @@ class WAFCenterCollector:
             '/tmp', 
             f'waf_sender_last_run_{self.zabbix_host.replace("/", "_")}.json'
         )
+        
+        # 线程安全锁
+        self.data_lock = threading.Lock()
     
     def detect_deployment_mode(self) -> str:
         """
@@ -333,7 +340,7 @@ class WAFCenterCollector:
     
     def get_sites_with_domains(self) -> List[Dict]:
         """
-        获取所有站点信息 - 支持按节点查询
+        获取所有站点信息 - 支持按节点并行查询
         
         Returns:
             站点列表
@@ -343,22 +350,44 @@ class WAFCenterCollector:
         # 先获取节点信息
         nodes_info = self.get_nodes_v2()
         
-        # 如果有节点信息，按节点查询站点
+        # 如果有节点信息，按节点并行查询站点
         if nodes_info and nodes_info.get('nodes'):
-            logger.info("使用v2 API按节点查询站点")
+            nodes = nodes_info['nodes']
+            logger.info(f"使用v2 API并行查询 {len(nodes)} 个节点的站点")
             
-            # 为每个节点查询站点
-            for node_id, node_info in nodes_info['nodes'].items():
-                node_sites = self.get_sites_by_node_v2(node_id)
+            def query_node_sites(node_id, node_info):
+                """查询单个节点的站点"""
+                try:
+                    node_sites = self.get_sites_by_node_v2(node_id)
+                    for site in node_sites:
+                        # 补充节点信息
+                        site['node_name'] = node_info['name']
+                        site['node_ip'] = node_info['ip']
+                        site['cluster_id'] = node_info['cluster_id']
+                        site['cluster_name'] = node_info.get('cluster_name', '')
+                        site['area_name'] = node_info.get('area_name', '')
+                    return node_sites
+                except Exception as e:
+                    logger.error(f"查询节点 {node_info['name']} 站点失败: {e}")
+                    return []
+            
+            # 使用线程池并行查询所有节点
+            actual_workers = min(self.max_workers, len(nodes))
+            with ThreadPoolExecutor(max_workers=actual_workers) as executor:
+                future_to_node = {
+                    executor.submit(query_node_sites, node_id, node_info): (node_id, node_info)
+                    for node_id, node_info in nodes.items()
+                }
                 
-                for site in node_sites:
-                    # 补充节点信息
-                    site['node_name'] = node_info['name']
-                    site['node_ip'] = node_info['ip']
-                    site['cluster_id'] = node_info['cluster_id']
-                    site['cluster_name'] = node_info.get('cluster_name', '')
-                    site['area_name'] = node_info.get('area_name', '')
-                    sites_list.append(site)
+                for future in as_completed(future_to_node):
+                    node_id, node_info = future_to_node[future]
+                    try:
+                        node_sites = future.result(timeout=30)
+                        with self.data_lock:
+                            sites_list.extend(node_sites)
+                        logger.debug(f"节点 {node_info['name']} 查询完成，发现 {len(node_sites)} 个站点")
+                    except Exception as e:
+                        logger.error(f"处理节点 {node_info['name']} 结果时出错: {e}")
             
             logger.info(f"通过v2 API从所有节点共发现 {len(sites_list)} 个站点")
             
@@ -593,6 +622,153 @@ class WAFCenterCollector:
         except Exception as e:
             logger.error(f"保存运行时间失败: {e}")
     
+    def collect_site_traffic_data(self, site: Dict, timestamp: int) -> List[Dict]:
+        """
+        采集单个站点的流量数据（线程安全）
+        
+        Args:
+            site: 站点信息
+            timestamp: 时间戳
+            
+        Returns:
+            该站点的所有监控数据项
+        """
+        site_data = []
+        
+        try:
+            # 获取设备ID
+            device_id = site.get('node_id') or site.get('device_id')
+            if not device_id:
+                logger.warning(f"站点 {site['name']} 没有有效的device_id，跳过")
+                return site_data
+            
+            # 获取namespace
+            namespace = site.get('cluster_id') or (site.get('struct_pk') if site.get('struct_pk') != "0" else None)
+            
+            # 获取流量数据
+            traffic_data = self.get_traffic_data_for_site(
+                site['id'],
+                device_id,
+                namespace
+            )
+            
+            # 构建监控项key
+            node_id = site.get('node_id', '')
+            site_id = site['id']
+            site_key = f"{node_id},{site_id}"
+            
+            # 站点状态
+            site_data.append({
+                'host': self.zabbix_host,
+                'key': f"waf.site.status[{site_key}]",
+                'value': 1 if site.get('enabled', True) else 0,
+                'clock': timestamp
+            })
+            
+            # 流量数据（只保留平均值）
+            for data_point in traffic_data:
+                # 入站流量平均值
+                site_data.append({
+                    'host': self.zabbix_host,
+                    'key': f"waf.site.traffic.in.avg[{site_key}]",
+                    'value': data_point['bytesInRateAvg'],
+                    'clock': data_point['timestamp']
+                })
+                
+                # 出站流量平均值
+                site_data.append({
+                    'host': self.zabbix_host,
+                    'key': f"waf.site.traffic.out.avg[{site_key}]",
+                    'value': data_point['bytesOutRateAvg'],
+                    'clock': data_point['timestamp']
+                })
+                
+                # 当前连接数平均值
+                site_data.append({
+                    'host': self.zabbix_host,
+                    'key': f"waf.site.conn.cur.avg[{site_key}]",
+                    'value': data_point['connCurAvg'],
+                    'clock': data_point['timestamp']
+                })
+                
+                # 连接速率平均值
+                site_data.append({
+                    'host': self.zabbix_host,
+                    'key': f"waf.site.conn.rate.avg[{site_key}]",
+                    'value': data_point['connRateAvg'],
+                    'clock': data_point['timestamp']
+                })
+                
+                # HTTP请求速率平均值
+                site_data.append({
+                    'host': self.zabbix_host,
+                    'key': f"waf.site.http.req.rate.avg[{site_key}]",
+                    'value': data_point['httpReqRateAvg'],
+                    'clock': data_point['timestamp']
+                })
+            
+            logger.info(f"节点 {site.get('node_name', 'N/A')} - 站点 {site['name']} 生成 {len(site_data)} 条监控数据")
+            
+        except Exception as e:
+            logger.error(f"采集站点 {site.get('name', 'unknown')} 流量数据失败: {e}")
+        
+        return site_data
+    
+    def collect_traffic_data_parallel(self, sites: List[Dict], timestamp: int) -> List[Dict]:
+        """
+        并行采集所有站点的流量数据
+        
+        Args:
+            sites: 站点列表
+            timestamp: 时间戳
+            
+        Returns:
+            所有站点的监控数据
+        """
+        all_traffic_data = []
+        
+        if not sites:
+            logger.warning("没有站点需要采集流量数据")
+            return all_traffic_data
+        
+        # 确定实际使用的线程数
+        actual_workers = min(self.max_workers, len(sites))
+        logger.info(f"使用 {actual_workers} 个线程并行采集 {len(sites)} 个站点的流量数据")
+        
+        # 使用线程池并行处理
+        with ThreadPoolExecutor(max_workers=actual_workers) as executor:
+            # 提交所有任务
+            future_to_site = {
+                executor.submit(self.collect_site_traffic_data, site, timestamp): site 
+                for site in sites
+            }
+            
+            # 处理完成的任务
+            completed_count = 0
+            failed_count = 0
+            
+            for future in as_completed(future_to_site):
+                site = future_to_site[future]
+                try:
+                    # 获取任务结果，设置超时时间
+                    site_data = future.result(timeout=60)
+                    
+                    # 线程安全地添加数据
+                    with self.data_lock:
+                        all_traffic_data.extend(site_data)
+                    
+                    completed_count += 1
+                    if completed_count % 10 == 0:
+                        logger.info(f"进度: {completed_count}/{len(sites)} 个站点已完成")
+                    
+                except Exception as e:
+                    failed_count += 1
+                    logger.error(f"处理站点 {site.get('name', 'unknown')} 时出错: {e}")
+        
+        logger.info(f"流量数据采集完成: 成功 {completed_count} 个，失败 {failed_count} 个")
+        
+        return all_traffic_data
+    
     def collect_all_data(self) -> List[Dict]:
         """
         收集所有数据（中心机模式）
@@ -698,81 +874,10 @@ class WAFCenterCollector:
                 })
                 logger.info(f"发送 {len(site_discovery)} 个站点发现数据")
             
-            # 4. 收集流量数据
-            # 直接处理站点列表
-            for site in sites:
-                # 对于v2 API获取的站点，使用node_id作为device_id
-                device_id = site.get('node_id') or site.get('device_id')
-                if not device_id:
-                    logger.warning(f"站点 {site['name']} 没有有效的device_id，跳过")
-                    continue
-                
-                # 获取流量数据
-                # 对于v2 API，namespace使用cluster_id；对于v1 API，使用struct_pk
-                namespace = site.get('cluster_id') or (site.get('struct_pk') if site.get('struct_pk') != "0" else None)
-                traffic_data = self.get_traffic_data_for_site(
-                    site['id'],
-                    device_id,
-                    namespace
-                )
-                
-                # 使用节点ID和站点ID组合作为唯一标识
-                node_id = site.get('node_id', '')
-                site_id = site['id']
-                site_key = f"{node_id},{site_id}"
-                
-                # 站点状态
-                all_data.append({
-                    'host': self.zabbix_host,
-                    'key': f"waf.site.status[{site_key}]",
-                    'value': 1 if site.get('enabled', True) else 0,
-                    'clock': timestamp
-                })
-                
-                # 流量数据（只保留平均值）
-                for data_point in traffic_data:
-                    # 入站流量平均值
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.traffic.in.avg[{site_key}]",
-                        'value': data_point['bytesInRateAvg'],
-                        'clock': data_point['timestamp']
-                    })
-                    
-                    # 出站流量平均值
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.traffic.out.avg[{site_key}]",
-                        'value': data_point['bytesOutRateAvg'],
-                        'clock': data_point['timestamp']
-                    })
-                    
-                    # 当前连接数平均值
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.conn.cur.avg[{site_key}]",
-                        'value': data_point['connCurAvg'],
-                        'clock': data_point['timestamp']
-                    })
-                    
-                    # 连接速率平均值
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.conn.rate.avg[{site_key}]",
-                        'value': data_point['connRateAvg'],
-                        'clock': data_point['timestamp']
-                    })
-                    
-                    
-                    # HTTP请求速率平均值
-                    all_data.append({
-                        'host': self.zabbix_host,
-                        'key': f"waf.site.http.req.rate.avg[{site_key}]",
-                        'value': data_point['httpReqRateAvg'],
-                        'clock': data_point['timestamp']
-                    })
-                
-                logger.info(f"节点 {site.get('node_name', 'N/A')} - 站点 {site['name']} 生成监控数据")
+            # 4. 收集流量数据（使用多线程并行采集）
+            logger.info("开始并行采集站点流量数据")
+            traffic_data = self.collect_traffic_data_parallel(sites, timestamp)
+            all_data.extend(traffic_data)
             
         
         # 保存运行时间
@@ -997,11 +1102,12 @@ class WAFCenterCollector:
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='WAF中心机数据采集器')
+    parser = argparse.ArgumentParser(description='WAF中心机数据采集器 - 支持多线程并行采集')
     parser.add_argument('--host', required=True, help='WAF管理地址')
     parser.add_argument('--token', required=True, help='API Token')
     parser.add_argument('--zabbix-server', required=True, help='Zabbix服务器地址')
     parser.add_argument('--zabbix-host', required=True, help='Zabbix中的主机名')
+    parser.add_argument('--max-workers', type=int, default=10, help='最大线程数（默认10）')
     parser.add_argument('--debug', action='store_true', help='启用调试模式')
     
     args = parser.parse_args()
@@ -1010,12 +1116,21 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     
+    # 验证线程数参数
+    if args.max_workers < 1:
+        logger.error("最大线程数必须大于0")
+        return 1
+    elif args.max_workers > 50:
+        logger.warning(f"线程数设置过大 ({args.max_workers})，建议不超过50")
+    
     # 创建采集器并运行
+    logger.info(f"初始化WAF采集器，最大线程数: {args.max_workers}")
     collector = WAFCenterCollector(
         waf_host=args.host,
         token=args.token,
         zabbix_server=args.zabbix_server,
-        zabbix_host=args.zabbix_host
+        zabbix_host=args.zabbix_host,
+        max_workers=args.max_workers
     )
     
     return collector.run()
